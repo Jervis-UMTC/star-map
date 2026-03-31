@@ -124,6 +124,7 @@ body {
   perspective: 1500px;
   transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
   animation: envelopeHeartbeat 4s ease-in-out infinite alternate;
+  will-change: transform;
 }
 
 @keyframes envelopeHeartbeat {
@@ -200,42 +201,64 @@ body {
   );
 }
 
-/* ---- Envelope Body — Luminous Glass ---- */
+/* ---- Envelope Body — Opaque Deep-Space Material ---- */
 .envelope-body {
   position: absolute;
   width: 100%;
   height: 100%;
-  /* Key difference: lighter glass that actually looks translucent */
-  background: linear-gradient(
-    160deg,
-    rgba(20, 30, 60, 0.7) 0%,
-    rgba(30, 45, 80, 0.5) 30%,
-    rgba(20, 35, 65, 0.6) 60%,
-    rgba(15, 25, 50, 0.7) 100%
-  );
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  /* Bright glowing border */
-  border: 1px solid rgba(56, 189, 248, 0.35);
+  /* Fully opaque deep-space surface */
+  background:
+    /* Nebula cloud overlay */
+    radial-gradient(
+      ellipse at 25% 30%,
+      rgba(56, 189, 248, 0.12) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at 75% 70%,
+      rgba(129, 140, 248, 0.1) 0%,
+      transparent 50%
+    ),
+    /* Base: Solid dark material */
+    linear-gradient(
+      160deg,
+      #0d1a3a 0%,
+      #0f1f45 25%,
+      #111d40 50%,
+      #0a1530 75%,
+      #081028 100%
+    );
+  /* Metallic embossed border */
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-top-color: rgba(120, 160, 220, 0.4);
+  border-left-color: rgba(100, 140, 200, 0.3);
   border-radius: 12px;
   box-shadow:
-    /* Inner light — the envelope glows from within */
-    inset 0 0 40px rgba(56, 189, 248, 0.15),
-    inset 0 0 80px rgba(129, 140, 248, 0.08),
+    /* Inner subtle edge highlights */
+    inset 0 1px 0 rgba(120, 160, 220, 0.2),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    inset 1px 0 0 rgba(100, 140, 200, 0.1),
+    inset -1px 0 0 rgba(100, 140, 200, 0.1),
+    /* Inner glow from within */
+    inset 0 0 40px rgba(56, 189, 248, 0.08),
+    inset 0 0 80px rgba(129, 140, 248, 0.05),
     /* Outer glow */
-    0 0 30px rgba(56, 189, 248, 0.15),
-    0 20px 60px rgba(0, 0, 0, 0.5);
+    0 0 30px rgba(56, 189, 248, 0.12),
+    0 20px 60px rgba(0, 0, 0, 0.6);
   overflow: hidden;
   z-index: 2;
 }
 
 .envelope-wrapper:hover .envelope-body {
-  border-color: rgba(56, 189, 248, 0.55);
+  border-color: rgba(56, 189, 248, 0.5);
+  border-top-color: rgba(120, 160, 220, 0.6);
   box-shadow:
-    inset 0 0 60px rgba(56, 189, 248, 0.25),
-    inset 0 0 100px rgba(129, 140, 248, 0.12),
-    0 0 50px rgba(56, 189, 248, 0.25),
-    0 25px 80px rgba(0, 0, 0, 0.5);
+    inset 0 1px 0 rgba(120, 160, 220, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4),
+    inset 0 0 50px rgba(56, 189, 248, 0.15),
+    inset 0 0 100px rgba(129, 140, 248, 0.08),
+    0 0 50px rgba(56, 189, 248, 0.2),
+    0 25px 80px rgba(0, 0, 0, 0.6);
 }
 
 /* Inner starfield visible through glass */
@@ -322,7 +345,7 @@ body {
   box-shadow: 0 0 15px rgba(56, 189, 248, 0.6), 0 0 30px rgba(56, 189, 248, 0.3);
 }
 
-/* ---- Letter peeking out ---- */
+/* ---- Letter peeking out (hidden by default) ---- */
 .envelope-letter {
   position: absolute;
   width: calc(100% - 30px);
@@ -331,8 +354,9 @@ body {
   bottom: 10px;
   background: linear-gradient(
     135deg,
-    rgba(240, 244, 255, 0.97) 0%,
-    rgba(210, 228, 255, 0.95) 100%
+    #e8eeff 0%,
+    #d4e0ff 50%,
+    #c8d8f8 100%
   );
   border: 1px solid rgba(255, 255, 255, 0.6);
   display: flex;
@@ -342,13 +366,14 @@ body {
   font-size: 1.6rem;
   color: #0a0e1a;
   border-radius: 6px;
-  transform: translateY(-12px);
+  /* Completely hidden behind envelope — not peeking */
+  transform: translateY(0px);
   transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1),
               box-shadow 0.5s ease;
   font-weight: 700;
   letter-spacing: 0.12em;
   font-family: var(--font-heading);
-  z-index: 4;
+  z-index: 1;
   box-shadow: 0 -6px 25px rgba(56, 189, 248, 0.3);
   overflow: hidden;
 }
@@ -365,40 +390,40 @@ body {
 }
 
 .envelope-wrapper:hover .envelope-letter {
-  transform: translateY(-65px);
+  transform: translateY(-70px);
   box-shadow: 0 -12px 50px rgba(56, 189, 248, 0.5),
               0 0 30px rgba(129, 140, 248, 0.2);
   z-index: 7;
 }
 
-/* ---- Front flap (bottom) ---- */
+/* ---- Front flap (bottom) — Fully Opaque ---- */
 .envelope-front {
   position: absolute;
   width: 0;
   height: 0;
-  border-left: 180px solid rgba(12, 20, 40, 0.9);
-  border-right: 180px solid rgba(12, 20, 40, 0.9);
-  border-bottom: 125px solid rgba(18, 28, 55, 0.92);
+  border-left: 180px solid #0c1830;
+  border-right: 180px solid #0c1830;
+  border-bottom: 125px solid #101e3e;
   border-top: 125px solid transparent;
   bottom: 0;
   border-radius: 0 0 12px 12px;
-  filter: drop-shadow(0 -3px 10px rgba(0, 0, 0, 0.3));
-  z-index: 3;
+  filter: drop-shadow(0 -3px 10px rgba(0, 0, 0, 0.4));
+  z-index: 5;
 }
 
-/* ---- Top flap ---- */
+/* ---- Top flap — Fully Opaque ---- */
 .envelope-flap {
   position: absolute;
   width: 0;
   height: 0;
   border-left: 180px solid transparent;
   border-right: 180px solid transparent;
-  border-top: 135px solid rgba(15, 24, 48, 0.95);
+  border-top: 135px solid #0e1c3c;
   border-bottom: 115px solid transparent;
   top: 0;
   transform-origin: top center;
   z-index: 6;
-  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.6));
   transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275),
               filter 0.5s ease;
 }
@@ -541,9 +566,10 @@ body {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
   z-index: 0;
-  background: var(--space-void);
+  background: transparent;
   animation: universeBreathe 16s ease-in-out infinite alternate;
   perspective: 1000px;
+  will-change: transform, filter;
 }
 
 /* Force hide all text labels from D3 Celestial (Nuclear Option) */
@@ -760,18 +786,18 @@ body {
 @media (min-width: 768px) {
   .text-story { font-size: 3rem; }
   .text-story-final { font-size: 4rem; }
-  .envelope-wrapper { width: 400px; height: 275px; }
+  .envelope-wrapper { width: 420px; height: 290px; }
   .envelope-front {
-    border-left-width: 200px;
-    border-right-width: 200px;
-    border-bottom-width: 137px;
-    border-top-width: 137px;
+    border-left-width: 210px;
+    border-right-width: 210px;
+    border-bottom-width: 145px;
+    border-top-width: 145px;
   }
   .envelope-flap {
-    border-left-width: 200px;
-    border-right-width: 200px;
-    border-top-width: 148px;
-    border-bottom-width: 127px;
+    border-left-width: 210px;
+    border-right-width: 210px;
+    border-top-width: 156px;
+    border-bottom-width: 134px;
   }
 }
 

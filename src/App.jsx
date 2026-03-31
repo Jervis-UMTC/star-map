@@ -103,23 +103,19 @@ function App() {
   }, []);
 
   const handleOpen = useCallback(() => {
-    // 1. Hide envelope immediately
+    // 1. Envelope fades out smoothly, dissolution takes over
     setShowEnvelope(false);
-
-    // 2. Start dissolution motes
     setShowDissolution(true);
 
-    // 3. Start revealing the star map underneath (overlaps with dissolution)
-    setTimeout(() => setStarMapActive(true), 800);
+    // 2. Star map reveals AFTER the burst
+    setTimeout(() => setStarMapActive(true), 7000);
 
-    // 4. Show click story after everything has settled
-    setTimeout(() => setShowStory(true), 5000);
+    // 3. Show scroll story after dust settles
+    setTimeout(() => setShowStory(true), 10000);
 
-    // Start audio on user interaction
+    // Start audio
     if (audioRef.current) {
-      audioRef.current.play().catch(() => {
-        // Silently ignore audio playback errors
-      });
+      audioRef.current.play().catch(() => {});
     }
   }, []);
 
@@ -130,7 +126,7 @@ function App() {
   const handleReset = useCallback(() => {
     setShowStory(false);
     setStarMapActive(false);
-    setTimeout(() => setShowEnvelope(true), 1500); // Wait for things to fade before bringing envelope back
+    setTimeout(() => setShowEnvelope(true), 1500);
   }, []);
 
   return (
@@ -153,10 +149,12 @@ function App() {
         {showEnvelope && (
           <motion.div
             key="envelope"
+            className="fixed-full z-50"
             exit={{
               opacity: 0,
-              scale: 1.1,
-              transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+              filter: "brightness(1.5) blur(12px)",
+              scale: 1.05,
+              transition: { duration: 1.2, ease: "easeInOut" },
             }}
           >
             <CosmicEnvelope onOpen={handleOpen} />
@@ -170,6 +168,7 @@ function App() {
           <Suspense fallback={null}>
             <motion.div
               key="dissolution"
+              className="fixed-full z-50 pointer-events-none"
               exit={{ opacity: 0, transition: { duration: 1.5, ease: "easeOut" } }}
             >
               <DissolutionEffect onComplete={handleDissolutionComplete} />

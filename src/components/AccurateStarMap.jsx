@@ -22,7 +22,7 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive }) {
         projection: "equirectangular",
         transform: "equatorial",
         center: [121.7740, 12.8797],
-        background: { fill: "#010409", opacity: 1 },
+        background: { fill: "transparent", opacity: 0 },
 
         stars: {
           show: true,
@@ -72,10 +72,14 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive }) {
         setIsLoaded(true);
         const starPaths = document.querySelectorAll('#celestial-map svg path:not([stroke])');
         starPaths.forEach((path) => {
-          // Add a dynamic animation to each star (Slow, smooth 6-12s cycle)
-          const duration = Math.random() * 6 + 6; 
-          const delay = Math.random() * -10;
-          path.style.animation = `starTwinkle ${duration}s ease-in-out infinite alternate ${delay}s`;
+          // Optimization: only animate ~30% of stars to save huge CPU/compositor load
+          if (Math.random() < 0.3) {
+            const duration = Math.random() * 6 + 6; 
+            const delay = Math.random() * -10;
+            path.style.animation = `starTwinkle ${duration}s ease-in-out infinite alternate ${delay}s`;
+            // Hardware acceleration hint applied
+            path.style.willChange = 'opacity, filter';
+          }
         });
       }, 500);
 
@@ -123,7 +127,7 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive }) {
         opacity: isActive ? 1 : 0,
         filter: isActive ? 'blur(0px)' : 'blur(8px)',
       }}
-      transition={{ duration: 5, ease: "easeOut", delay: 0.8 }}
+      transition={{ duration: 8, ease: "easeInOut" }}
       className={`starmap-container ${isActive ? 'pointer-events-auto' : 'pointer-events-none'}`}
     >
       {/* Container for parallax tilt with slow, fluid momentum */}
