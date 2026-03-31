@@ -1,0 +1,786 @@
+/* ============================================================
+   ✦ COSMIC DESIGN SYSTEM — Star Map Birthday
+   ============================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Outfit:wght@300;400;500;600&display=swap');
+
+:root {
+  --space-void: #010409;
+  --space-dark: #03040c;
+  --space-mid: #0a0e1a;
+  --space-light: #1e293b;
+  --sky-primary: #38bdf8;
+  --sky-secondary: #818cf8;
+  --starlight: #f0f4ff;
+  --accent-gold: #fcd34d;
+  --font-heading: 'Cormorant Garamond', serif;
+  --font-body: 'Outfit', sans-serif;
+  --font-cursive: 'Great Vibes', cursive;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--space-void);
+  color: var(--starlight);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ============================================================
+   LAYOUT UTILITIES
+   ============================================================ */
+
+.app-container {
+  position: relative;
+  min-height: 100vh;
+  overflow: hidden;
+  background-color: var(--space-void);
+}
+
+.absolute-full { position: absolute; top: 0; left: 0; right: 0; bottom: 0; }
+.fixed-full { position: fixed; top: 0; left: 0; right: 0; bottom: 0; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-col { display: flex; flex-direction: column; }
+.z-0 { z-index: 0; }
+.z-5 { z-index: 5; }
+.z-10 { z-index: 10; }
+.z-50 { z-index: 50; }
+.pointer-events-none { pointer-events: none; }
+.pointer-events-auto { pointer-events: auto; }
+.overflow-y-auto { overflow-y: auto; }
+.text-center { text-align: center; }
+.font-heading { font-family: var(--font-heading); }
+.font-body { font-family: var(--font-body); }
+
+/* ============================================================
+   HCI CONTROLS
+   ============================================================ */
+
+.scroll-indicator {
+  position: fixed;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  height: 100px; /* Give it space to animate */
+}
+
+.scroll-line {
+  width: 1px;
+  background: linear-gradient(to bottom, rgba(255, 245, 230, 0.8), transparent);
+  box-shadow: 0 0 10px rgba(255, 245, 230, 0.5);
+}
+
+/* ============================================================
+   ENVELOPE — Luminous Astral Artifact
+   ============================================================ */
+
+.envelope-scene {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  cursor: pointer;
+}
+
+.envelope-scene:focus-visible {
+  outline: 2px solid var(--sky-primary);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+/* Orbiting particles container */
+.envelope-orbit-container {
+  position: absolute;
+  width: 0;
+  height: 0;
+  top: 50%;
+  left: 50%;
+  z-index: 51;
+  pointer-events: none;
+}
+
+.orbit-particle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: center center;
+}
+
+/* Main wrapper */
+.envelope-wrapper {
+  position: relative;
+  width: 360px;
+  height: 250px;
+  perspective: 1500px;
+  transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: envelopeHeartbeat 4s ease-in-out infinite alternate;
+}
+
+@keyframes envelopeHeartbeat {
+  0% { transform: scale(1) translateY(0); }
+  100% { transform: scale(1.02) translateY(-4px); }
+}
+
+.envelope-wrapper:hover {
+  animation: none;
+  transform: scale(1.06) translateY(-6px);
+}
+
+/* ---- Triple-layer glow behind envelope ---- */
+.envelope-glow-layer {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+}
+
+.glow-1 {
+  top: -100px; left: -100px; right: -100px; bottom: -100px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(56, 189, 248, 0.15) 0%,
+    rgba(56, 189, 248, 0.05) 40%,
+    transparent 70%
+  );
+  animation: glowPulse1 4s ease-in-out infinite alternate;
+}
+
+.glow-2 {
+  top: -60px; left: -60px; right: -60px; bottom: -60px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(129, 140, 248, 0.12) 0%,
+    rgba(129, 140, 248, 0.04) 50%,
+    transparent 70%
+  );
+  animation: glowPulse2 5s ease-in-out infinite alternate;
+}
+
+.glow-3 {
+  top: -30px; left: -30px; right: -30px; bottom: -30px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(56, 189, 248, 0.2) 0%,
+    transparent 60%
+  );
+  animation: glowPulse3 3s ease-in-out infinite alternate;
+}
+
+@keyframes glowPulse1 {
+  0% { transform: scale(0.9); opacity: 0.5; }
+  100% { transform: scale(1.15); opacity: 1; }
+}
+@keyframes glowPulse2 {
+  0% { transform: scale(1.05); opacity: 0.4; }
+  100% { transform: scale(0.9); opacity: 0.8; }
+}
+@keyframes glowPulse3 {
+  0% { transform: scale(0.95); opacity: 0.6; }
+  100% { transform: scale(1.1); opacity: 1; }
+}
+
+/* Envelope hover intensifies all glows */
+.envelope-wrapper:hover .glow-1 { opacity: 1; }
+.envelope-wrapper:hover .glow-2 { opacity: 1; }
+.envelope-wrapper:hover .glow-3 {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(56, 189, 248, 0.35) 0%,
+    transparent 60%
+  );
+}
+
+/* ---- Envelope Body — Luminous Glass ---- */
+.envelope-body {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  /* Key difference: lighter glass that actually looks translucent */
+  background: linear-gradient(
+    160deg,
+    rgba(20, 30, 60, 0.7) 0%,
+    rgba(30, 45, 80, 0.5) 30%,
+    rgba(20, 35, 65, 0.6) 60%,
+    rgba(15, 25, 50, 0.7) 100%
+  );
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  /* Bright glowing border */
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 12px;
+  box-shadow:
+    /* Inner light — the envelope glows from within */
+    inset 0 0 40px rgba(56, 189, 248, 0.15),
+    inset 0 0 80px rgba(129, 140, 248, 0.08),
+    /* Outer glow */
+    0 0 30px rgba(56, 189, 248, 0.15),
+    0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  z-index: 2;
+}
+
+.envelope-wrapper:hover .envelope-body {
+  border-color: rgba(56, 189, 248, 0.55);
+  box-shadow:
+    inset 0 0 60px rgba(56, 189, 248, 0.25),
+    inset 0 0 100px rgba(129, 140, 248, 0.12),
+    0 0 50px rgba(56, 189, 248, 0.25),
+    0 25px 80px rgba(0, 0, 0, 0.5);
+}
+
+/* Inner starfield visible through glass */
+.envelope-inner-stars {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image:
+    radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 60%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 55% 15%, rgba(56,189,248,0.8) 0%, transparent 100%),
+    radial-gradient(1px 1px at 75% 45%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 25% 80%, rgba(129,140,248,0.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 85% 75%, rgba(56,189,248,0.7) 0%, transparent 100%),
+    radial-gradient(1px 1px at 45% 40%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 65% 85%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(2px 2px at 90% 20%, rgba(56,189,248,0.6) 0%, transparent 100%),
+    radial-gradient(1px 1px at 10% 55%, rgba(129,140,248,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 70%, rgba(255,255,255,0.6) 0%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 30% 30%, rgba(255,255,255,0.7) 0%, transparent 100%);
+  animation: innerStarsShift 15s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes innerStarsShift {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(-3px) translateY(-2px); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+/* Constellation SVG overlay */
+.envelope-constellation {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 3;
+  opacity: 0.8;
+  transition: opacity 0.5s ease;
+}
+
+.envelope-wrapper:hover .envelope-constellation {
+  opacity: 1;
+}
+
+/* ---- Light seams — light leaking from edges ---- */
+.light-seam {
+  position: absolute;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.seam-top {
+  top: 0; left: 10%; right: 10%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(56, 189, 248, 0.6), transparent);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.4), 0 0 20px rgba(56, 189, 248, 0.2);
+  animation: seamPulse 3s ease-in-out infinite alternate;
+}
+
+.seam-left {
+  top: 10%; bottom: 10%; left: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, rgba(129, 140, 248, 0.4), transparent);
+  box-shadow: 0 0 6px rgba(129, 140, 248, 0.3);
+  animation: seamPulse 4s ease-in-out infinite alternate;
+}
+
+.seam-right {
+  top: 10%; bottom: 10%; right: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, transparent, rgba(56, 189, 248, 0.4), transparent);
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.3);
+  animation: seamPulse 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes seamPulse {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
+}
+
+.envelope-wrapper:hover .light-seam {
+  opacity: 1;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.6), 0 0 30px rgba(56, 189, 248, 0.3);
+}
+
+/* ---- Letter peeking out ---- */
+.envelope-letter {
+  position: absolute;
+  width: calc(100% - 30px);
+  height: calc(100% - 20px);
+  left: 15px;
+  bottom: 10px;
+  background: linear-gradient(
+    135deg,
+    rgba(240, 244, 255, 0.97) 0%,
+    rgba(210, 228, 255, 0.95) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 28px;
+  font-size: 1.6rem;
+  color: #0a0e1a;
+  border-radius: 6px;
+  transform: translateY(-12px);
+  transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.5s ease;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  font-family: var(--font-heading);
+  z-index: 4;
+  box-shadow: 0 -6px 25px rgba(56, 189, 248, 0.3);
+  overflow: hidden;
+}
+
+.letter-glow {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(
+    ellipse at center top,
+    rgba(56, 189, 248, 0.15) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+.envelope-wrapper:hover .envelope-letter {
+  transform: translateY(-65px);
+  box-shadow: 0 -12px 50px rgba(56, 189, 248, 0.5),
+              0 0 30px rgba(129, 140, 248, 0.2);
+  z-index: 7;
+}
+
+/* ---- Front flap (bottom) ---- */
+.envelope-front {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 180px solid rgba(12, 20, 40, 0.9);
+  border-right: 180px solid rgba(12, 20, 40, 0.9);
+  border-bottom: 125px solid rgba(18, 28, 55, 0.92);
+  border-top: 125px solid transparent;
+  bottom: 0;
+  border-radius: 0 0 12px 12px;
+  filter: drop-shadow(0 -3px 10px rgba(0, 0, 0, 0.3));
+  z-index: 3;
+}
+
+/* ---- Top flap ---- */
+.envelope-flap {
+  position: absolute;
+  width: 0;
+  height: 0;
+  border-left: 180px solid transparent;
+  border-right: 180px solid transparent;
+  border-top: 135px solid rgba(15, 24, 48, 0.95);
+  border-bottom: 115px solid transparent;
+  top: 0;
+  transform-origin: top center;
+  z-index: 6;
+  filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.5));
+  transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275),
+              filter 0.5s ease;
+}
+
+.envelope-wrapper:hover .envelope-flap {
+  transform: rotateX(175deg);
+  z-index: 1;
+  filter: drop-shadow(0 -8px 20px rgba(56, 189, 248, 0.3));
+}
+
+/* ---- Wax Seal — with light rays ---- */
+.wax-seal-container {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Radiating light rays behind seal */
+.seal-rays {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: conic-gradient(
+    from 0deg,
+    transparent,
+    rgba(252, 211, 77, 0.1),
+    transparent,
+    rgba(252, 211, 77, 0.08),
+    transparent,
+    rgba(56, 189, 248, 0.08),
+    transparent,
+    rgba(252, 211, 77, 0.1),
+    transparent
+  );
+  border-radius: 50%;
+  animation: raysRotate 12s linear infinite;
+  transform: scale(2.5);
+  opacity: 0.8;
+}
+
+@keyframes raysRotate {
+  0% { transform: scale(2.5) rotate(0deg); }
+  100% { transform: scale(2.5) rotate(360deg); }
+}
+
+.envelope-wrapper:hover .seal-rays {
+  opacity: 1;
+  transform: scale(3);
+}
+
+.wax-seal {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  background: radial-gradient(
+    circle at 35% 35%,
+    #fde68a 0%,
+    var(--accent-gold) 30%,
+    #d97706 65%,
+    #78350f 100%
+  );
+  border-radius: 50%;
+  box-shadow:
+    0 2px 15px rgba(252, 211, 77, 0.5),
+    0 0 40px rgba(252, 211, 77, 0.2),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.4),
+    inset 0 2px 6px rgba(255, 255, 255, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+  /* Animated ring pulse */
+  outline: 2px solid rgba(252, 211, 77, 0.2);
+  outline-offset: 4px;
+  animation: sealOutline 2.5s ease-in-out infinite;
+}
+
+@keyframes sealOutline {
+  0%, 100% { outline-offset: 4px; outline-color: rgba(252, 211, 77, 0.2); }
+  50% { outline-offset: 10px; outline-color: rgba(252, 211, 77, 0.5); }
+}
+
+.seal-star {
+  color: #fffbeb;
+  font-size: 1.6rem;
+  z-index: 1;
+}
+
+.envelope-wrapper:hover .wax-seal {
+  box-shadow:
+    0 0 30px rgba(252, 211, 77, 0.7),
+    0 0 60px rgba(252, 211, 77, 0.3),
+    0 0 80px rgba(56, 189, 248, 0.15),
+    inset 0 -3px 8px rgba(0, 0, 0, 0.4);
+  transform: scale(1.1);
+}
+
+/* CTA text */
+.envelope-cta {
+  margin-top: 3.5rem;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 400;
+  letter-spacing: 0.45em;
+  text-transform: uppercase;
+  color: var(--starlight);
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.5);
+  animation: ctaPulse 3s ease-in-out infinite;
+}
+
+@keyframes ctaPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* ============================================================
+   DISSOLUTION PARTICLES
+   ============================================================ */
+
+.dissolution-container {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 50;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* ============================================================
+   STAR MAP
+   ============================================================ */
+
+.starmap-container {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  z-index: 0;
+  background: var(--space-void);
+  animation: universeBreathe 16s ease-in-out infinite alternate;
+  perspective: 1000px;
+}
+
+/* Force hide all text labels from D3 Celestial (Nuclear Option) */
+.starmap-container text,
+.starmap-container tspan,
+#celestial-map text,
+#celestial-map tspan,
+.constellation-name {
+  display: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+}
+
+@keyframes universeBreathe {
+  0% { transform: scale(1); filter: brightness(1); }
+  100% { transform: scale(1.02); filter: brightness(1.2); }
+}
+
+@keyframes starTwinkle {
+  0% { opacity: 0.1; filter: drop-shadow(0 0 2px rgba(255,255,255,0)); }
+  100% { opacity: 1; filter: drop-shadow(0 0 6px rgba(255,255,255,0.8)); }
+}
+
+.map-spin-animation {
+  animation: mapSpin 180s linear infinite;
+  transform-origin: center center;
+}
+
+@keyframes mapSpin {
+  to { transform: rotate(360deg) translateZ(0); }
+}
+
+.starmap-vignette {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 40%,
+    rgba(1, 4, 9, 0.4) 70%,
+    rgba(1, 4, 9, 0.85) 100%
+  );
+  pointer-events: none;
+  z-index: 2;
+}
+
+.starmap-aurora {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 25vh;
+  background: linear-gradient(
+    to top,
+    rgba(56, 189, 248, 0.06) 0%,
+    rgba(129, 140, 248, 0.03) 40%,
+    transparent 100%
+  );
+  animation: auroraShift 10s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: 2;
+}
+
+@keyframes auroraShift {
+  0% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+.replay-button {
+  position: absolute;
+  bottom: 2rem;
+  right: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+  z-index: 100;
+}
+
+.replay-button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* ============================================================
+   CLICK STORY (Replaces Scroll Story)
+   ============================================================ */
+
+.click-story-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.story-vignette {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150vw;
+  height: 150vh;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(1, 4, 9, 0.95) 0%,
+    rgba(1, 4, 9, 0.8) 15%,
+    rgba(1, 4, 9, 0.4) 30%,
+    transparent 50%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
+.story-slide {
+  position: absolute;
+  width: 100%;
+  max-width: 60rem;
+  padding: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.final-stardust-burst {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(252, 211, 77, 0.4) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: -1;
+  mix-blend-mode: screen;
+}
+
+.click-prompt {
+  position: absolute;
+  bottom: 15%;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--sky-primary);
+  animation: promptPulse 3s ease-in-out infinite;
+}
+
+@keyframes promptPulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.98); }
+  50% { opacity: 0.8; transform: scale(1); }
+}
+
+.text-story {
+  font-size: 2.8rem;
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: #fffaf0; /* Soft warm starlight */
+  text-shadow:
+    0 0 15px rgba(255, 250, 240, 0.4),
+    0 0 30px rgba(255, 250, 240, 0.2);
+  font-family: var(--font-heading);
+}
+
+.story-line {
+  display: block;
+}
+
+.final-cursive-text {
+  font-family: var(--font-cursive);
+  font-size: 4.5rem;
+  color: #ffe4b5; /* Warm Champagne */
+  line-height: 1.4;
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 0 20px rgba(255, 228, 181, 0.6),
+    0 0 40px rgba(255, 228, 181, 0.3);
+}
+
+.text-caption {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  opacity: 0.4;
+  color: var(--sky-primary);
+  margin-top: 2rem;
+}
+
+.cosmic-divider {
+  width: 120px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--sky-primary), transparent);
+  margin: 0 auto;
+  opacity: 0.4;
+  position: relative;
+}
+
+.cosmic-divider::after {
+  content: '·';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.6rem;
+  color: var(--sky-primary);
+  text-shadow: 0 0 10px var(--sky-primary);
+}
+
+/* Responsive */
+@media (min-width: 768px) {
+  .text-story { font-size: 3rem; }
+  .text-story-final { font-size: 4rem; }
+  .envelope-wrapper { width: 400px; height: 275px; }
+  .envelope-front {
+    border-left-width: 200px;
+    border-right-width: 200px;
+    border-bottom-width: 137px;
+    border-top-width: 137px;
+  }
+  .envelope-flap {
+    border-left-width: 200px;
+    border-right-width: 200px;
+    border-top-width: 148px;
+    border-bottom-width: 127px;
+  }
+}
+
+::selection { background: var(--sky-primary); color: #fff; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--space-void); }
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, var(--sky-primary), var(--sky-secondary));
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--sky-secondary); }
