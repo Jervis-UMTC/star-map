@@ -304,110 +304,124 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
   }, []);
 
   useEffect(() => {
-    // Generate sprites once
-    const colors = ['#e2e8f0', '#ffffff', '#dbeafe', '#c7d2fe', '#38bdf8', '#fcd34d'];
-    const cache = {};
-    const size = 64; 
-    const center = size / 2;
+    let mounted = true;
+    let cleanupFunc = null;
 
-    colors.forEach(color => {
-      const canvas = document.createElement('canvas');
-      canvas.width = size;
-      canvas.height = size;
-      const oCtx = canvas.getContext('2d');
-      // Glow
-      const gradient = oCtx.createRadialGradient(center, center, 0, center, center, center);
-      gradient.addColorStop(0, color);
-      gradient.addColorStop(0.4, color);
-      gradient.addColorStop(1, 'transparent');
-      oCtx.fillStyle = gradient;
-      oCtx.beginPath();
-      oCtx.arc(center, center, center, 0, Math.PI * 2);
-      oCtx.fill();
-      // Core
-      oCtx.fillStyle = color;
-      oCtx.beginPath();
-      oCtx.arc(center, center, Math.max(1, center * 0.15), 0, Math.PI * 2);
-      oCtx.fill();
-      
-      cache[color] = canvas;
-    });
+    // Defer heavy setup by 50ms so LoadingScreen can paint and start animating smoothly without main-thread blocking
+    const initTimeout = setTimeout(() => {
+      if (!mounted) return;
 
-    spriteCacheRef.current = cache;
+      // Generate sprites once
+      const colors = ['#e2e8f0', '#ffffff', '#dbeafe', '#c7d2fe', '#38bdf8', '#fcd34d'];
+      const cache = {};
+      const size = 64; 
+      const center = size / 2;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-
-    const resize = () => {
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
-      canvas.style.width = window.innerWidth + 'px';
-      canvas.style.height = window.innerHeight + 'px';
-      ctx.scale(dpr, dpr);
-      starsRef.current = generateStars(window.innerWidth, window.innerHeight);
-      nebulaeRef.current = generateNebulae(window.innerWidth, window.innerHeight);
-    };
-
-    resize();
-    window.addEventListener('resize', resize);
-
-    const handleMouseMove = (e) => {
-      mouseRef.current = {
-        x: e.clientX / window.innerWidth,
-        y: e.clientY / window.innerHeight,
-      };
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-
-    let lastShootingStarTime = 0;
-    const shootingStarInterval = () => Math.random() * 5000 + 3000;
-    let nextShootingStarDelay = shootingStarInterval();
-
-    const animate = (timestamp) => {
-      timeRef.current = timestamp;
-      const w = window.innerWidth;
-      const h = window.innerHeight;
-
-      // Smoothly interpolate intensity
-      currentIntensityRef.current += (targetIntensityRef.current - currentIntensityRef.current) * 0.015;
-      const currentInt = currentIntensityRef.current;
-
-      ctx.clearRect(0, 0, w, h);
-
-      // Draw nebulae (behind everything)
-      nebulaeRef.current.forEach(n => drawNebula(ctx, n, timestamp, w, h, currentInt));
-
-      // Draw stars by layer
-      starsRef.current.forEach(s => drawStar(ctx, s, timestamp, currentInt));
-
-      // Shooting stars
-      if (timestamp - lastShootingStarTime > nextShootingStarDelay) {
-        shootingStarsRef.current.push(spawnShootingStar(w, h));
-        lastShootingStarTime = timestamp;
-        nextShootingStarDelay = shootingStarInterval();
-      }
-
-      shootingStarsRef.current.forEach(m => {
-        m.x += m.vx;
-        m.y += m.vy;
-        m.life -= m.decay;
-        drawShootingStar(ctx, m);
+      colors.forEach(color => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const oCtx = canvas.getContext('2d');
+        // Glow
+        const gradient = oCtx.createRadialGradient(center, center, 0, center, center, center);
+        gradient.addColorStop(0, color);
+        gradient.addColorStop(0.4, color);
+        gradient.addColorStop(1, 'transparent');
+        oCtx.fillStyle = gradient;
+        oCtx.beginPath();
+        oCtx.arc(center, center, center, 0, Math.PI * 2);
+        oCtx.fill();
+        // Core
+        oCtx.fillStyle = color;
+        oCtx.beginPath();
+        oCtx.arc(center, center, Math.max(1, center * 0.15), 0, Math.PI * 2);
+        oCtx.fill();
+        
+        cache[color] = canvas;
       });
 
-      // Remove dead meteors
-      shootingStarsRef.current = shootingStarsRef.current.filter(m => m.life > 0);
+      spriteCacheRef.current = cache;
+
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      const resize = () => {
+        const dpr = window.devicePixelRatio || 1;
+        canvas.width = window.innerWidth * dpr;
+        canvas.height = window.innerHeight * dpr;
+        canvas.style.width = window.innerWidth + 'px';
+        canvas.style.height = window.innerHeight + 'px';
+        ctx.scale(dpr, dpr);
+        starsRef.current = generateStars(window.innerWidth, window.innerHeight);
+        nebulaeRef.current = generateNebulae(window.innerWidth, window.innerHeight);
+      };
+
+      resize();
+      window.addEventListener('resize', resize);
+
+      const handleMouseMove = (e) => {
+        mouseRef.current = {
+          x: e.clientX / window.innerWidth,
+          y: e.clientY / window.innerHeight,
+        };
+      };
+      window.addEventListener('mousemove', handleMouseMove);
+
+      let lastShootingStarTime = 0;
+      const shootingStarInterval = () => Math.random() * 5000 + 3000;
+      let nextShootingStarDelay = shootingStarInterval();
+
+      const animate = (timestamp) => {
+        timeRef.current = timestamp;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+
+        // Smoothly interpolate intensity
+        currentIntensityRef.current += (targetIntensityRef.current - currentIntensityRef.current) * 0.015;
+        const currentInt = currentIntensityRef.current;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // Draw nebulae (behind everything)
+        nebulaeRef.current.forEach(n => drawNebula(ctx, n, timestamp, w, h, currentInt));
+
+        // Draw stars by layer
+        starsRef.current.forEach(s => drawStar(ctx, s, timestamp, currentInt));
+
+        // Shooting stars
+        if (timestamp - lastShootingStarTime > nextShootingStarDelay) {
+          shootingStarsRef.current.push(spawnShootingStar(w, h));
+          lastShootingStarTime = timestamp;
+          nextShootingStarDelay = shootingStarInterval();
+        }
+
+        shootingStarsRef.current.forEach(m => {
+          m.x += m.vx;
+          m.y += m.vy;
+          m.life -= m.decay;
+          drawShootingStar(ctx, m);
+        });
+
+        // Remove dead meteors
+        shootingStarsRef.current = shootingStarsRef.current.filter(m => m.life > 0);
+
+        animRef.current = requestAnimationFrame(animate);
+      };
 
       animRef.current = requestAnimationFrame(animate);
-    };
 
-    animRef.current = requestAnimationFrame(animate);
+      cleanupFunc = () => {
+        cancelAnimationFrame(animRef.current);
+        window.removeEventListener('resize', resize);
+        window.removeEventListener('mousemove', handleMouseMove);
+      };
+    }, 50);
 
     return () => {
-      cancelAnimationFrame(animRef.current);
-      window.removeEventListener('resize', resize);
-      window.removeEventListener('mousemove', handleMouseMove);
+      mounted = false;
+      clearTimeout(initTimeout);
+      if (cleanupFunc) cleanupFunc();
     };
   }, [generateStars, generateNebulae, spawnShootingStar, drawStar, drawNebula, drawShootingStar]);
 

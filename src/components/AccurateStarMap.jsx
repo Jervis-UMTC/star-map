@@ -123,11 +123,8 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, filter: 'blur(8px)' }}
-      animate={{
-        opacity: isActive ? 1 : 0,
-        filter: isActive ? 'blur(0px)' : 'blur(8px)',
-      }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: isActive ? 1 : 0 }}
       transition={{ duration: 8, ease: "easeInOut" }}
       className={`starmap-container ${isActive ? 'pointer-events-auto' : 'pointer-events-none'}`}
     >
