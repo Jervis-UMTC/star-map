@@ -36,7 +36,7 @@ const isItalicWord = (word) => {
  * CharacterReveal — Animates text letter-by-letter like stars igniting.
  * Words are wrapped in spans to prevent mid-word breaking at edges.
  */
-function CharacterReveal({ text, isFinal = false }) {
+function CharacterReveal({ text, isFinal = false, onComplete }) {
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
@@ -44,11 +44,11 @@ function CharacterReveal({ text, isFinal = false }) {
     return () => clearTimeout(timeout);
   }, [text]);
 
-  const words = useMemo(() => {
+  const { words, totalTime } = useMemo(() => {
     let charIndex = 0;
     
     // Split by newlines first to handle paragraph breaks
-    return text.split('\n').map((line, lineIdx) => {
+    const mappedWords = text.split('\n').map((line, lineIdx) => {
       if (line === '') return { isBreak: true, id: `break-${lineIdx}` };
       
       const lineWords = line.split(' ').map((word) => {
@@ -63,7 +63,17 @@ function CharacterReveal({ text, isFinal = false }) {
       
       return { isLine: true, words: lineWords, id: `line-${lineIdx}` };
     });
+
+    const time = 200 + (charIndex * 35) + 800; // start delay + chars delay + transition duration
+    return { words: mappedWords, totalTime: time };
   }, [text]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (onComplete) onComplete();
+    }, totalTime);
+    return () => clearTimeout(timer);
+  }, [totalTime, onComplete]);
 
   return (
     <div className={`text-story text-center ${isFinal ? 'text-story-final-container' : ''}`}>
@@ -119,12 +129,14 @@ export default function ClickStory({ onReset }) {
 
   const isFinal = currentIndex === phrases.length - 1;
 
-  // Debounce clicks to prevent double-skipping
+  // Reset canClick on each slide change
   useEffect(() => {
     setCanClick(false);
-    const timer = setTimeout(() => setCanClick(true), 2000);
-    return () => clearTimeout(timer);
   }, [currentIndex]);
+
+  const handleRevealComplete = () => {
+    setCanClick(true);
+  };
 
   const handleNext = (e) => {
     // Add visual ripple
@@ -183,7 +195,11 @@ export default function ClickStory({ onReset }) {
           transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
           className="story-slide"
         >
-          <CharacterReveal text={phrases[currentIndex]} isFinal={isFinal} />
+          <CharacterReveal 
+            text={phrases[currentIndex]} 
+            isFinal={isFinal} 
+            onComplete={handleRevealComplete}
+          />
           
           {/* Magic stardust burst on final phrase */}
           {isFinal && (
