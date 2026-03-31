@@ -80,29 +80,29 @@ export default function DissolutionEffect({ onComplete }) {
       const bl_x = cx - envW / 2, bl_y = cy + envH / 2;
       const br_x = cx + envW / 2, br_y = cy + envH / 2;
 
-      // Outer border
-      addLine(tl_x, tl_y, tr_x, tr_y, cyan, 2);
-      addLine(tr_x, tr_y, br_x, br_y, indigo, 2);
-      addLine(br_x, br_y, bl_x, bl_y, cyan, 2);
-      addLine(bl_x, bl_y, tl_x, tl_y, indigo, 2);
+      // Outer border — Reduced density for a finer, lighter look
+      addLine(tl_x, tl_y, tr_x, tr_y, cyan, 0.8);
+      addLine(tr_x, tr_y, br_x, br_y, indigo, 0.8);
+      addLine(br_x, br_y, bl_x, bl_y, cyan, 0.8);
+      addLine(bl_x, bl_y, tl_x, tl_y, indigo, 0.8);
 
       // Top Flap
-      addLine(tl_x, tl_y, cx, cy + 15, cyan, 1.5);
-      addLine(tr_x, tr_y, cx, cy + 15, cyan, 1.5);
+      addLine(tl_x, tl_y, cx, cy + 15, cyan, 0.6);
+      addLine(tr_x, tr_y, cx, cy + 15, cyan, 0.6);
 
       // Bottom Flap
-      addLine(bl_x, bl_y, cx, cy - 25, indigo, 1.5);
-      addLine(br_x, br_y, cx, cy - 25, indigo, 1.5);
+      addLine(bl_x, bl_y, cx, cy - 25, indigo, 0.6);
+      addLine(br_x, br_y, cx, cy - 25, indigo, 0.6);
 
-      // Wax seal (dense circle at the center)
-      for (let i = 0; i < 200; i++) {
+      // Wax seal (dense circle at the center) — Halved for airiness
+      for (let i = 0; i < 80; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const r = Math.random() * 25;
+        const r = Math.random() * 20;
         parts.push({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r, color: gold });
       }
 
-      // Constellation text/dust mix (interior strictly picking from envelope's specific colors)
-      for (let i = 0; i < 400; i++) {
+      // Constellation text/dust mix — Reduced significantly to avoid clutter
+      for (let i = 0; i < 150; i++) {
         const rx = cx + (Math.random() - 0.5) * envW * 0.85;
         const ry = cy + (Math.random() - 0.5) * envH * 0.85;
         parts.push({ x: rx, y: ry, color: envelopeColors[Math.floor(Math.random() * envelopeColors.length)] });
@@ -115,7 +115,7 @@ export default function DissolutionEffect({ onComplete }) {
           // Elegant minimal starting drift
           vx: (Math.random() - 0.5) * 0.4,
           vy: (Math.random() - 0.5) * 0.4 - 0.2, // barely floating
-          size: Math.random() * 1.5 + 1.0, // slightly smaller, more elegant
+          size: Math.random() * 0.8 + 0.5, // much finer motes
           color: p.color,
           wobbleFreq: Math.random() * 0.004 + 0.002,
           wobbleAmp: Math.random() * 6 + 2,
@@ -210,16 +210,16 @@ export default function DissolutionEffect({ onComplete }) {
         ctx.save();
         ctx.globalCompositeOperation = 'screen';
 
-        // High-performance glow (solid soft-alpha circle instead of costly radial gradient)
-        ctx.fillStyle = `rgba(${r},${g},${b},${0.25 * opacity})`;
+        // High-performance glow — softer opacity and tighter glow radius
+        ctx.fillStyle = `rgba(${r},${g},${b},${0.12 * opacity})`;
         ctx.beginPath();
-        ctx.arc(drawX, drawY, s * 2.5, 0, Math.PI * 2);
+        ctx.arc(drawX, drawY, s * 2.0, 0, Math.PI * 2);
         ctx.fill();
 
-        // Core dot
-        ctx.fillStyle = `rgba(255,255,255,${0.9 * opacity})`;
+        // Core dot — sharper and less overpowering
+        ctx.fillStyle = `rgba(255,255,255,${0.7 * opacity})`;
         ctx.beginPath();
-        ctx.arc(drawX, drawY, s * 0.5, 0, Math.PI * 2);
+        ctx.arc(drawX, drawY, s * 0.4, 0, Math.PI * 2);
         ctx.fill();
 
         ctx.restore();

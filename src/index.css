@@ -569,7 +569,6 @@ body {
   background: transparent;
   animation: universeBreathe 16s ease-in-out infinite alternate;
   perspective: 1000px;
-  will-change: transform, filter;
 }
 
 /* Force hide all text labels from D3 Celestial (Nuclear Option) */

@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
  * April 1, 2005, Philippines sky. Now with living effects:
  * vignette, aurora shimmer, deep parallax, and twinkling stars.
  */
-const AccurateStarMap = memo(function AccurateStarMap({ isActive }) {
+const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const containerRef = useRef(null);
 
@@ -70,15 +70,16 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive }) {
       // Give D3 a moment to render the SVG, then inject twinkle animations
       setTimeout(() => {
         setIsLoaded(true);
+        if (onLoaded) onLoaded();
+        
         const starPaths = document.querySelectorAll('#celestial-map svg path:not([stroke])');
         starPaths.forEach((path) => {
-          // Optimization: only animate ~30% of stars to save huge CPU/compositor load
-          if (Math.random() < 0.3) {
+          // Optimization: animates ~15% of stars instead of 30%, which is plenty for a subtle twinkle
+          // Removed will-change as 400+ composition layers causes extreme GPU thrashing
+          if (Math.random() < 0.15) {
             const duration = Math.random() * 6 + 6; 
             const delay = Math.random() * -10;
             path.style.animation = `starTwinkle ${duration}s ease-in-out infinite alternate ${delay}s`;
-            // Hardware acceleration hint applied
-            path.style.willChange = 'opacity, filter';
           }
         });
       }, 500);

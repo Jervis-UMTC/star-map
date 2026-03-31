@@ -25,6 +25,8 @@ function App() {
   const [showDissolution, setShowDissolution] = useState(false);
   const [starMapActive, setStarMapActive] = useState(false);
   const [showStory, setShowStory] = useState(false);
+  const [celestialReady, setCelestialReady] = useState(false);
+  const [mapRendered, setMapRendered] = useState(false);
   const audioRef = useRef(null);
 
   // Global Asset Preloader
@@ -78,12 +80,8 @@ function App() {
 
         await Promise.all([audioPromise, celestialPromise]);
 
-        // Add an extra little beat for elegance
-        await new Promise((r) => setTimeout(r, 4000));
-
         if (isMounted) {
-          setIsLoading(false);
-          setShowEnvelope(true);
+          setCelestialReady(true);
         }
       } catch (err) {
         console.error("Asset loading error:", err);
@@ -101,6 +99,17 @@ function App() {
       isMounted = false;
     };
   }, []);
+
+  // When the map finishes rendering behind the scenes, we can safely reveal the envelope
+  useEffect(() => {
+    if (mapRendered) {
+      // Add an extra little beat for elegance
+      setTimeout(() => {
+        setIsLoading(false);
+        setShowEnvelope(true);
+      }, 2500);
+    }
+  }, [mapRendered]);
 
   const handleOpen = useCallback(() => {
     // 1. Envelope fades out smoothly, dissolution takes over
@@ -141,8 +150,13 @@ function App() {
       {/* Always-on cosmic canvas background */}
       <CosmicCanvas intensity={starMapActive ? 0.15 : 1} />
 
-      {/* D3 Celestial star map — always mounted, opacity controlled by isActive */}
-      {!isLoading && <AccurateStarMap isActive={starMapActive} />}
+      {/* D3 Celestial star map — Mounts hidden during loading so it doesn't freeze thread on reveal */}
+      {celestialReady && (
+        <AccurateStarMap 
+          isActive={starMapActive} 
+          onLoaded={() => setMapRendered(true)} 
+        />
+      )}
 
       {/* Envelope */}
       <AnimatePresence>
