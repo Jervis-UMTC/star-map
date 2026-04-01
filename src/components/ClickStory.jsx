@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw } from 'lucide-react';
 
@@ -190,10 +191,10 @@ export default function ClickStory({ onReset }) {
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
-          initial={{ opacity: 0, filter: 'blur(10px)', y: 30 }}
+          initial={{ opacity: 0, filter: 'blur(10px)', y: 40 }}
           animate={{ opacity: 1, filter: 'blur(0px)', y: 0 }}
-          exit={{ opacity: 0, filter: 'blur(10px)', y: -30 }}
-          transition={{ duration: 1.5, ease: [0.22, 1, 0.36, 1] }}
+          exit={{ opacity: 0, filter: 'blur(12px)', y: -50 }}
+          transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }}
           className="story-slide"
         >
           <CharacterReveal 

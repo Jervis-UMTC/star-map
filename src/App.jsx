@@ -1,13 +1,13 @@
-import { useState, useRef, useCallback, useEffect, Suspense, lazy } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { AnimatePresence, motion } from 'framer-motion';
 import CosmicCanvas from './components/CosmicCanvas';
 import CosmicEnvelope from './components/CosmicEnvelope';
 import AccurateStarMap from './components/AccurateStarMap';
 import LoadingScreen from './components/LoadingScreen';
-
-// Lazy loaded components for better initial performance
-const DissolutionEffect = lazy(() => import('./components/DissolutionEffect'));
-const ClickStory = lazy(() => import('./components/ClickStory'));
+import StardustCursor from './components/StardustCursor';
+import DissolutionEffect from './components/DissolutionEffect';
+import ClickStory from './components/ClickStory';
 
 /**
  * App — Orchestrates the cinematic flow with overlapping transitions:
@@ -28,6 +28,10 @@ function App() {
   const [celestialReady, setCelestialReady] = useState(false);
   const [mapRendered, setMapRendered] = useState(false);
   const audioRef = useRef(null);
+
+  const handleMapLoaded = useCallback(() => {
+    setMapRendered(true);
+  }, []);
 
   // Global Asset Preloader
   useEffect(() => {
@@ -116,10 +120,10 @@ function App() {
     setShowEnvelope(false);
     setShowDissolution(true);
 
-    // 2. Star map reveals AFTER the burst
-    setTimeout(() => setStarMapActive(true), 7000);
+    // 2. Star map reveals earlier (as the vortex finishes and burst begins)
+    setTimeout(() => setStarMapActive(true), 5000);
 
-    // 3. Show scroll story after dust settles
+    // 3. Show scroll story after dust settles and map is 100% opaque
     setTimeout(() => setShowStory(true), 10000);
 
     // Start audio
@@ -147,6 +151,9 @@ function App() {
         {isLoading && <LoadingScreen />}
       </AnimatePresence>
 
+      {/* Global Interactive Cursor */}
+      <StardustCursor isPaused={isLoading || showDissolution} />
+
       {/* Always-on cosmic canvas background */}
       <CosmicCanvas intensity={starMapActive ? 0.15 : 1} />
 
@@ -154,7 +161,7 @@ function App() {
       {celestialReady && (
         <AccurateStarMap 
           isActive={starMapActive} 
-          onLoaded={() => setMapRendered(true)} 
+          onLoaded={handleMapLoaded} 
         />
       )}
 
@@ -166,7 +173,7 @@ function App() {
             className="fixed-full z-50"
             exit={{
               opacity: 0,
-              filter: "brightness(1.5) blur(12px)",
+              filter: "brightness(1.5)",
               scale: 1.05,
               transition: { duration: 1.2, ease: "easeInOut" },
             }}
@@ -179,32 +186,28 @@ function App() {
       {/* Dissolution motes — overlaps with star map reveal */}
       <AnimatePresence>
         {showDissolution && (
-          <Suspense fallback={null}>
-            <motion.div
-              key="dissolution"
-              className="fixed-full z-50 pointer-events-none"
-              exit={{ opacity: 0, transition: { duration: 1.5, ease: "easeOut" } }}
-            >
-              <DissolutionEffect onComplete={handleDissolutionComplete} />
-            </motion.div>
-          </Suspense>
+          <motion.div
+            key="dissolution"
+            className="fixed-full z-50 pointer-events-none"
+            exit={{ opacity: 0, transition: { duration: 1.5, ease: "easeOut" } }}
+          >
+            <DissolutionEffect onComplete={handleDissolutionComplete} />
+          </motion.div>
         )}
       </AnimatePresence>
 
       {/* Click Story — appears after star map is mostly visible */}
       <AnimatePresence>
         {showStory && (
-          <Suspense fallback={null}>
-            <motion.div
-              key="story"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 2.5, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="absolute-full z-10"
-            >
-              <ClickStory onReset={handleReset} />
-            </motion.div>
-          </Suspense>
+          <motion.div
+            key="story"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 2.5, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            className="absolute-full z-10"
+          >
+            <ClickStory onReset={handleReset} />
+          </motion.div>
         )}
       </AnimatePresence>
     </main>

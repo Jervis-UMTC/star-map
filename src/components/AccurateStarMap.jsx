@@ -1,5 +1,4 @@
 import { useEffect, useState, useRef, memo } from 'react';
-import { motion } from 'framer-motion';
 
 /**
  * AccurateStarMap — Renders the D3 Celestial star map for
@@ -62,7 +61,7 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
           },
 
           datapath: "https://cdn.jsdelivr.net/npm/d3-celestial@0.7.35/data/",
-          interactive: true,
+          interactive: false,
           controls: false,
         };
 
@@ -75,14 +74,36 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
           if (onLoaded) onLoaded();
           
           const injectTwinkles = () => {
-            const starPaths = document.querySelectorAll('#celestial-map svg path:not([stroke])');
-            starPaths.forEach((path) => {
-              if (Math.random() < 0.15) {
-                const duration = Math.random() * 6 + 6; 
-                const delay = Math.random() * -10;
-                path.style.animation = `starTwinkle ${duration}s ease-in-out infinite alternate ${delay}s`;
+            const starPaths = Array.from(document.querySelectorAll('#celestial-map svg path:not([stroke])'));
+            const linePaths = Array.from(document.querySelectorAll('#celestial-map svg path[stroke="#38bdf8"]'));
+            const mwPaths = Array.from(document.querySelectorAll('#celestial-map svg path[fill="#0f172a"]'));
+            
+            let i = 0;
+            const CHUNK_SIZE = 50;
+
+            const processChunk = () => {
+              const end = Math.min(i + CHUNK_SIZE, starPaths.length);
+              
+              for (; i < end; i++) {
+                const path = starPaths[i];
+                if (Math.random() < 0.15) {
+                  const duration = Math.random() * 6 + 6; 
+                  const delay = Math.random() * -10;
+                  path.style.animation = `starTwinkle ${duration}s ease-in-out infinite alternate ${delay}s`;
+                }
               }
-            });
+
+              if (i < starPaths.length) {
+                requestAnimationFrame(processChunk);
+              } else {
+                // Done with stars, apply classes to lines and milky way
+                // These are much smaller sets so we can do them at once
+                linePaths.forEach((path) => path.classList.add('constellation-line'));
+                mwPaths.forEach((path) => path.classList.add('milky-way-path'));
+              }
+            };
+
+            requestAnimationFrame(processChunk);
           };
 
           if ('requestIdleCallback' in window) {
@@ -98,21 +119,7 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
     }, 150); // Yield to main thread first
 
     return () => clearTimeout(initTimer);
-  }, []);
-
-  // Subtle slow rotation effect for the star map is now handled in CSS (.map-spin-animation)
-  useEffect(() => {
-    if (!isActive || !isLoaded || !window.Celestial) return;
-
-    try {
-      const mapEl = document.querySelector('#celestial-map svg');
-      if (mapEl) {
-        mapEl.classList.add('map-spin-animation');
-      }
-    } catch {
-      // Silently ignore errors
-    }
-  }, [isActive, isLoaded]);
+  }, [onLoaded]);
 
   // Deep Parallax Effect based on Mouse Movement
   useEffect(() => {
@@ -121,6 +128,22 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
     let rafId;
     let w = window.innerWidth;
     let h = window.innerHeight;
+    
+    // Store exact mouse target vs current smooth position
+    let targetX = 0;
+    let targetY = 0;
+    let currentX = 0;
+    let currentY = 0;
+
+    let isParallaxActive = false;
+    let parallaxTimeout;
+
+    if (isActive) {
+      // Unlock the 3D parallax ONLY after the fade-in completely finishes (5 seconds)
+      parallaxTimeout = setTimeout(() => {
+        isParallaxActive = true;
+      }, 5000);
+    }
 
     const handleResize = () => {
       w = window.innerWidth;
@@ -128,26 +151,34 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
     };
     
     const handleMouseMove = (e) => {
-      if (!containerRef.current) return;
-      if (rafId) cancelAnimationFrame(rafId);
-      
-      const cx = e.clientX;
-      const cy = e.clientY;
+      if (!isParallaxActive) return; // Keep map perfectly centered while fading in
+      targetX = (e.clientX / w - 0.5) * 2; // -1 to 1
+      targetY = (e.clientY / h - 0.5) * 2; // -1 to 1
+    };
 
-      rafId = requestAnimationFrame(() => {
-        const x = (cx / w - 0.5) * 2; // -1 to 1
-        const y = (cy / h - 0.5) * 2; // -1 to 1
-        
-        // Tilt the map slightly based on mouse (increased intensity)
-        if (containerRef.current) {
-           containerRef.current.style.transform = `rotateX(${-y * 6}deg) rotateY(${x * 6}deg) scale(1.08)`;
-        }
-      });
+    const renderLoop = () => {
+      // Calculate fluid JS smoothing (lerp) toward mouse target
+      const diffX = targetX - currentX;
+      const diffY = targetY - currentY;
+      
+      if (Math.abs(diffX) > 0.001) currentX += diffX * 0.05;
+      if (Math.abs(diffY) > 0.001) currentY += diffY * 0.05;
+      
+      if (containerRef.current) {
+        containerRef.current.style.transform = `rotateX(${-currentY * 6}deg) rotateY(${currentX * 6}deg) scale(1.08)`;
+      }
+      
+      rafId = requestAnimationFrame(renderLoop);
     };
 
     window.addEventListener('resize', handleResize);
     window.addEventListener('mousemove', handleMouseMove);
+    
+    // Start continuous animation loop
+    rafId = requestAnimationFrame(renderLoop);
+
     return () => {
+      clearTimeout(parallaxTimeout);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
       if (rafId) cancelAnimationFrame(rafId);
@@ -155,23 +186,27 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
   }, [isActive]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: isActive ? 1 : 0 }}
-      transition={{ duration: 8, ease: "easeInOut" }}
-      className={`starmap-container ${isActive ? 'pointer-events-auto' : 'pointer-events-none'}`}
+    <div
+      style={{
+        opacity: isActive ? 1 : 0,
+        transition: 'opacity 5s ease-in-out',
+        willChange: 'opacity'
+      }}
+      className="starmap-container pointer-events-none"
     >
       {/* Container for parallax tilt with slow, fluid momentum */}
       <div 
         ref={containerRef} 
         className="absolute-full" 
-        style={{ transition: 'transform 1.5s cubic-bezier(0.1, 0.8, 0.2, 1)', transformOrigin: 'center center' }}
+        style={{ 
+          transformOrigin: 'center center'
+          // removed will-change: transform to prevent blurry SVG rasterization ghosting
+        }}
       >
         {/* The D3 Celestial map */}
         <div
           id="celestial-map"
           className="absolute-full"
-          style={{ mixBlendMode: 'screen' }}
         />
       </div>
 
@@ -180,7 +215,7 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
 
       {/* Aurora shimmer at bottom */}
       <div className="starmap-aurora" />
-    </motion.div>
+    </div>
   );
 });
 

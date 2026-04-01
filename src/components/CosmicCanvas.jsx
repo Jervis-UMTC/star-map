@@ -8,6 +8,7 @@ import { useRef, useEffect, useCallback, memo } from 'react';
 const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
+  const targetMouseRef = useRef({ x: 0.5, y: 0.5 });
   const mouseRef = useRef({ x: 0.5, y: 0.5 });
   const starsRef = useRef([]);
   const shootingStarsRef = useRef([]);
@@ -347,7 +348,7 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
       const handleMouseMove = (e) => {
         const { w, h } = dimsRef.current;
         if (w === 0 || h === 0) return;
-        mouseRef.current = {
+        targetMouseRef.current = {
           x: e.clientX / w,
           y: e.clientY / h,
         };
@@ -361,6 +362,10 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
       const animate = (timestamp) => {
         timeRef.current = timestamp;
         const { w, h } = dimsRef.current;
+
+        // Smooth mathematical lerping (glide) for background parallax
+        mouseRef.current.x += (targetMouseRef.current.x - mouseRef.current.x) * 0.05;
+        mouseRef.current.y += (targetMouseRef.current.y - mouseRef.current.y) * 0.05;
 
         currentIntensityRef.current += (targetIntensityRef.current - currentIntensityRef.current) * 0.015;
         const currentInt = currentIntensityRef.current;
@@ -393,12 +398,23 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
         animRef.current = requestAnimationFrame(animate);
       };
 
+      const handleVisibilityChange = () => {
+        if (document.hidden) {
+          if (animRef.current) cancelAnimationFrame(animRef.current);
+        } else {
+          lastShootingStarTime = performance.now(); // reset time to prevent burst
+          animRef.current = requestAnimationFrame(animate);
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
       animRef.current = requestAnimationFrame(animate);
 
       cleanupFunc = () => {
         cancelAnimationFrame(animRef.current);
         window.removeEventListener('resize', resize);
         window.removeEventListener('mousemove', handleMouseMove);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
       };
     }, 100);
 
