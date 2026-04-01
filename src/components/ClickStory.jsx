@@ -235,12 +235,23 @@ export default function ClickStory({ onReset }) {
         {isFinal && (
            <motion.div
            className="click-prompt"
-           style={{ color: '#ffe4b5', letterSpacing: '0.3em' }}
-           initial={{ opacity: 0 }}
-           animate={{ opacity: 0.8 }}
+           style={{ 
+             color: '#ffe4b5', 
+             letterSpacing: '0.3em', 
+             cursor: 'default',
+             animation: 'none' /* Disable CSS pulse so Framer Motion can scale it */
+           }}
+           initial={{ opacity: 0, scale: 1, textShadow: "0 0 0px rgba(255, 228, 181, 0)" }}
+           animate={{ opacity: 0.8, scale: 1 }}
            transition={{ delay: 4, duration: 2 }}
+           whileHover={{ 
+             scale: 1.15, 
+             opacity: 1,
+             textShadow: "0 0 20px rgba(255, 228, 181, 0.8)",
+             transition: { duration: 0.3, ease: "easeOut" }
+           }}
          >
-           Always & Forever
+           I love you
          </motion.div>
         )}
       </AnimatePresence>
