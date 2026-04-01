@@ -129,11 +129,6 @@ export default function ClickStory({ onReset }) {
 
   const isFinal = currentIndex === phrases.length - 1;
 
-  // Reset canClick on each slide change
-  useEffect(() => {
-    setCanClick(false);
-  }, [currentIndex]);
-
   const handleRevealComplete = () => {
     setCanClick(true);
   };
@@ -145,6 +140,7 @@ export default function ClickStory({ onReset }) {
 
     if (!isFinal && canClick) {
       setCurrentIndex((prev) => prev + 1);
+      setCanClick(false);
     }
   };
 

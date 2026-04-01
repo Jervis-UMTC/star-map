@@ -16,6 +16,7 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
   const spriteCacheRef = useRef({});
   const targetIntensityRef = useRef(intensity);
   const currentIntensityRef = useRef(intensity);
+  const dimsRef = useRef({ w: 0, h: 0 });
 
   useEffect(() => {
     targetIntensityRef.current = intensity;
@@ -152,22 +153,16 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
   }, []);
 
   const drawStar = useCallback((ctx, star, time, currentInt) => {
-    // Multi-frequency flicker: combine 3 sine waves at different frequencies
-    // This creates an organic, pseudo-random shimmer effect
     const wave1 = Math.sin(time * star.freq1 + star.phase1);
     const wave2 = Math.sin(time * star.freq2 + star.phase2) * 0.6;
     const wave3 = Math.sin(time * star.freq3 + star.phase3) * 0.3;
-    const combined = (wave1 + wave2 + wave3) / 1.9; // Normalize to roughly -1..1
+    const combined = (wave1 + wave2 + wave3) / 1.9;
 
-    // Apply flicker intensity — how much the star varies
     let flicker = 0.5 + 0.5 * combined * star.flickerIntensity;
 
-    // Random sharp flash: when combined signal exceeds threshold, spike brightness
     if (combined > star.flashThreshold) {
       flicker = Math.min(1.0, flicker + (combined - star.flashThreshold) * 4);
     }
-
-    // Occasional deep dim
     if (combined < -star.flashThreshold) {
       flicker = Math.max(0.08, flicker * 0.4);
     }
@@ -176,53 +171,47 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
 
     if (currentOpacity < 0.02) return;
 
-    // Parallax offset based on mouse
     const mx = (mouseRef.current.x - 0.5) * star.parallaxStrength;
     const my = (mouseRef.current.y - 0.5) * star.parallaxStrength;
     const drawX = star.baseX + mx;
     const drawY = star.baseY + my;
 
-    // Dynamic glow radius — stars pulse in size with flicker
     const glowMult = 1 + combined * 0.3 * star.flickerIntensity;
     const glowRadius = star.size * 3 * glowMult;
 
-    ctx.save();
+    // Direct state assignment instead of save/restore to improve perf in tight loop
     ctx.globalAlpha = currentOpacity;
 
-    // Use pre-rendered sprite for extreme performance
     const sprite = spriteCacheRef.current[star.color];
     if (sprite) {
       const spriteSize = glowRadius * 2;
       ctx.drawImage(sprite, drawX - glowRadius, drawY - glowRadius, spriteSize, spriteSize);
     } else {
-      // Fallback
       ctx.fillStyle = star.color;
       ctx.beginPath();
       ctx.arc(drawX, drawY, star.size * 0.6, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Diffraction spikes for bright stars — flicker with the star
     if (star.hasDiffraction && currentOpacity > 0.35) {
       const spikeLen = star.size * 6 * (0.6 + 0.4 * flicker);
       ctx.strokeStyle = star.color;
       ctx.lineWidth = 0.5;
       ctx.globalAlpha = currentOpacity * 0.5;
 
-      // Vertical spike
       ctx.beginPath();
       ctx.moveTo(drawX, drawY - spikeLen);
       ctx.lineTo(drawX, drawY + spikeLen);
       ctx.stroke();
 
-      // Horizontal spike
       ctx.beginPath();
       ctx.moveTo(drawX - spikeLen, drawY);
       ctx.lineTo(drawX + spikeLen, drawY);
       ctx.stroke();
     }
-
-    ctx.restore();
+    
+    // reset globalAlpha instead of restore
+    ctx.globalAlpha = 1.0;
   }, []);
 
   const drawNebula = useCallback((ctx, nebula, time, width, height, currentInt) => {
@@ -230,7 +219,6 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
     nebula.y += nebula.driftSpeedY;
     nebula.rotation += nebula.rotationSpeed;
 
-    // Wrap around
     if (nebula.x < -nebula.radius) nebula.x = width + nebula.radius;
     if (nebula.x > width + nebula.radius) nebula.x = -nebula.radius;
     if (nebula.y < -nebula.radius) nebula.y = height + nebula.radius;
@@ -238,15 +226,14 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
 
     const breathe = Math.sin(time * 0.0008 + nebula.rotation) * 0.3 + 0.7;
 
-    ctx.save();
     ctx.globalAlpha = nebula.opacity * breathe * currentInt;
-    ctx.globalCompositeOperation = 'screen';
 
     const { r, g, b } = nebula.color;
     const gradient = ctx.createRadialGradient(
       nebula.x, nebula.y, 0,
       nebula.x, nebula.y, nebula.radius
     );
+    // Hardcoded string to avoid interpolation in loop
     gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.4)`);
     gradient.addColorStop(0.4, `rgba(${r}, ${g}, ${b}, 0.15)`);
     gradient.addColorStop(1, 'transparent');
@@ -255,18 +242,16 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
     ctx.beginPath();
     ctx.arc(nebula.x, nebula.y, nebula.radius, 0, Math.PI * 2);
     ctx.fill();
-
-    ctx.restore();
+    
+    ctx.globalAlpha = 1.0;
   }, []);
 
   const drawShootingStar = useCallback((ctx, meteor) => {
     if (meteor.life <= 0) return;
 
-    ctx.save();
     ctx.globalAlpha = meteor.life;
 
-    // Trail
-    const tailLength = meteor.isGolden ? meteor.length * 1.5 : meteor.length; // Golden tails are longer
+    const tailLength = meteor.isGolden ? meteor.length * 1.5 : meteor.length;
     const tailX = meteor.x - (meteor.vx / Math.sqrt(meteor.vx ** 2 + meteor.vy ** 2)) * tailLength * meteor.life;
     const tailY = meteor.y - (meteor.vy / Math.sqrt(meteor.vx ** 2 + meteor.vy ** 2)) * tailLength * meteor.life;
 
@@ -282,17 +267,16 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
     gradient.addColorStop(1, meteor.color);
 
     ctx.strokeStyle = gradient;
-    ctx.lineWidth = meteor.isGolden ? meteor.width * 1.5 : meteor.width; // Golden trails are thicker
+    ctx.lineWidth = meteor.isGolden ? meteor.width * 1.5 : meteor.width;
     ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(tailX, tailY);
     ctx.lineTo(meteor.x, meteor.y);
     ctx.stroke();
 
-    // Head glow
     const headRadius = meteor.isGolden ? 6 : 4;
     const headGradient = ctx.createRadialGradient(meteor.x, meteor.y, 0, meteor.x, meteor.y, headRadius);
-    headGradient.addColorStop(0, 'rgba(255, 255, 255, ' + meteor.life + ')');
+    headGradient.addColorStop(0, `rgba(255, 255, 255, ${meteor.life})`);
     headGradient.addColorStop(0.5, meteor.color);
     headGradient.addColorStop(1, 'transparent');
     ctx.fillStyle = headGradient;
@@ -300,18 +284,17 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
     ctx.arc(meteor.x, meteor.y, headRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.restore();
+    ctx.globalAlpha = 1.0;
   }, []);
 
   useEffect(() => {
     let mounted = true;
     let cleanupFunc = null;
 
-    // Defer heavy setup by 50ms so LoadingScreen can paint and start animating smoothly without main-thread blocking
+    // Delay init slightly to let loading screen paint
     const initTimeout = setTimeout(() => {
       if (!mounted) return;
 
-      // Generate sprites once
       const colors = ['#e2e8f0', '#ffffff', '#dbeafe', '#c7d2fe', '#38bdf8', '#fcd34d'];
       const cache = {};
       const size = 64; 
@@ -322,7 +305,6 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
         canvas.width = size;
         canvas.height = size;
         const oCtx = canvas.getContext('2d');
-        // Glow
         const gradient = oCtx.createRadialGradient(center, center, 0, center, center, center);
         gradient.addColorStop(0, color);
         gradient.addColorStop(0.4, color);
@@ -331,12 +313,10 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
         oCtx.beginPath();
         oCtx.arc(center, center, center, 0, Math.PI * 2);
         oCtx.fill();
-        // Core
         oCtx.fillStyle = color;
         oCtx.beginPath();
         oCtx.arc(center, center, Math.max(1, center * 0.15), 0, Math.PI * 2);
         oCtx.fill();
-        
         cache[color] = canvas;
       });
 
@@ -347,23 +327,29 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
       const ctx = canvas.getContext('2d');
 
       const resize = () => {
+        const w = window.innerWidth;
+        const h = window.innerHeight;
+        dimsRef.current = { w, h };
+        
         const dpr = window.devicePixelRatio || 1;
-        canvas.width = window.innerWidth * dpr;
-        canvas.height = window.innerHeight * dpr;
-        canvas.style.width = window.innerWidth + 'px';
-        canvas.style.height = window.innerHeight + 'px';
+        canvas.width = w * dpr;
+        canvas.height = h * dpr;
+        canvas.style.width = w + 'px';
+        canvas.style.height = h + 'px';
         ctx.scale(dpr, dpr);
-        starsRef.current = generateStars(window.innerWidth, window.innerHeight);
-        nebulaeRef.current = generateNebulae(window.innerWidth, window.innerHeight);
+        starsRef.current = generateStars(w, h);
+        nebulaeRef.current = generateNebulae(w, h);
       };
 
       resize();
       window.addEventListener('resize', resize);
 
       const handleMouseMove = (e) => {
+        const { w, h } = dimsRef.current;
+        if (w === 0 || h === 0) return;
         mouseRef.current = {
-          x: e.clientX / window.innerWidth,
-          y: e.clientY / window.innerHeight,
+          x: e.clientX / w,
+          y: e.clientY / h,
         };
       };
       window.addEventListener('mousemove', handleMouseMove);
@@ -374,28 +360,27 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
 
       const animate = (timestamp) => {
         timeRef.current = timestamp;
-        const w = window.innerWidth;
-        const h = window.innerHeight;
+        const { w, h } = dimsRef.current;
 
-        // Smoothly interpolate intensity
         currentIntensityRef.current += (targetIntensityRef.current - currentIntensityRef.current) * 0.015;
         const currentInt = currentIntensityRef.current;
 
         ctx.clearRect(0, 0, w, h);
 
-        // Draw nebulae (behind everything)
+        // Batch global composite operations
+        ctx.globalCompositeOperation = 'screen';
         nebulaeRef.current.forEach(n => drawNebula(ctx, n, timestamp, w, h, currentInt));
 
-        // Draw stars by layer
+        ctx.globalCompositeOperation = 'source-over'; // Default
         starsRef.current.forEach(s => drawStar(ctx, s, timestamp, currentInt));
 
-        // Shooting stars
         if (timestamp - lastShootingStarTime > nextShootingStarDelay) {
           shootingStarsRef.current.push(spawnShootingStar(w, h));
           lastShootingStarTime = timestamp;
           nextShootingStarDelay = shootingStarInterval();
         }
 
+        ctx.globalCompositeOperation = 'source-over'; // just in case
         shootingStarsRef.current.forEach(m => {
           m.x += m.vx;
           m.y += m.vy;
@@ -403,7 +388,6 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
           drawShootingStar(ctx, m);
         });
 
-        // Remove dead meteors
         shootingStarsRef.current = shootingStarsRef.current.filter(m => m.life > 0);
 
         animRef.current = requestAnimationFrame(animate);
@@ -416,7 +400,7 @@ const CosmicCanvas = memo(function CosmicCanvas({ intensity = 1 }) {
         window.removeEventListener('resize', resize);
         window.removeEventListener('mousemove', handleMouseMove);
       };
-    }, 50);
+    }, 100);
 
     return () => {
       mounted = false;

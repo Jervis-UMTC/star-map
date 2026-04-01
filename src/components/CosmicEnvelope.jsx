@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 
 /**
@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
  */
 export default function CosmicEnvelope({ onOpen }) {
   // Orbiting stardust particles around the envelope
-  const orbitingDust = useMemo(() => {
+  const [orbitingDust] = useState(() => {
     return Array.from({ length: 16 }, (_, i) => ({
       id: i,
       angle: (i / 16) * 360,
@@ -18,7 +18,7 @@ export default function CosmicEnvelope({ onOpen }) {
       delay: Math.random() * -20,
       opacity: Math.random() * 0.5 + 0.4,
     }));
-  }, []);
+  });
 
   return (
     <motion.div

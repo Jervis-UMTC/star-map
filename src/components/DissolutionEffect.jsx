@@ -41,15 +41,6 @@ export default function DissolutionEffect({ onComplete }) {
     const BURST_END = 8000;
     const TOTAL = 8500;
 
-    const colors = [
-      { r: 255, g: 255, b: 255 },
-      { r: 219, g: 234, b: 254 },
-      { r: 56, g: 189, b: 248 },
-      { r: 129, g: 140, b: 248 },
-      { r: 252, g: 211, b: 77 },
-      { r: 255, g: 245, b: 230 },
-    ];
-
     const motes = [];
     let startTime = null;
 
@@ -116,7 +107,7 @@ export default function DissolutionEffect({ onComplete }) {
           vx: (Math.random() - 0.5) * 0.4,
           vy: (Math.random() - 0.5) * 0.4 - 0.2, // barely floating
           size: Math.random() * 0.8 + 0.5, // much finer motes
-          color: p.color,
+          colorStr: `${p.color.r},${p.color.g},${p.color.b}`,
           wobbleFreq: Math.random() * 0.004 + 0.002,
           wobbleAmp: Math.random() * 6 + 2,
           wobblePhase: Math.random() * Math.PI * 2,
@@ -133,6 +124,9 @@ export default function DissolutionEffect({ onComplete }) {
       
       const elapsed = timestamp - startTime;
       ctx.clearRect(0, 0, w, h);
+      
+      // We do screen blending globally for the whole effect
+      ctx.globalCompositeOperation = 'screen';
 
       // ---- Phase 3 blend: Calculate convergence strength ----
       let convergeStrength = 0;
@@ -204,25 +198,21 @@ export default function DissolutionEffect({ onComplete }) {
         const drawX = m.x + wobble;
         const drawY = m.y;
 
-        const { r, g, b } = m.color;
         const s = m.size * (1 - convergeStrength * 0.4);
 
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-
         // High-performance glow — softer opacity and tighter glow radius
-        ctx.fillStyle = `rgba(${r},${g},${b},${0.12 * opacity})`;
+        ctx.globalAlpha = 0.12 * opacity;
+        ctx.fillStyle = `rgb(${m.colorStr})`;
         ctx.beginPath();
         ctx.arc(drawX, drawY, s * 2.0, 0, Math.PI * 2);
         ctx.fill();
 
         // Core dot — sharper and less overpowering
-        ctx.fillStyle = `rgba(255,255,255,${0.7 * opacity})`;
+        ctx.globalAlpha = 0.7 * opacity;
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
         ctx.arc(drawX, drawY, s * 0.4, 0, Math.PI * 2);
         ctx.fill();
-
-        ctx.restore();
       }
 
       // ---- Convergence star glow (builds up as motes gather) ----
@@ -239,9 +229,6 @@ export default function DissolutionEffect({ onComplete }) {
         }
 
         if (starIntensity > 0.01) {
-          ctx.save();
-          ctx.globalCompositeOperation = 'screen';
-
           const haloR = 100 + starIntensity * 250;
           ctx.globalAlpha = starIntensity * 0.4;
           const halo = ctx.createRadialGradient(starX, starY, 0, starX, starY, haloR);
@@ -264,8 +251,6 @@ export default function DissolutionEffect({ onComplete }) {
           ctx.beginPath();
           ctx.arc(starX, starY, coreR, 0, Math.PI * 2);
           ctx.fill();
-
-          ctx.restore();
         }
       }
 
@@ -277,8 +262,6 @@ export default function DissolutionEffect({ onComplete }) {
         const washRadius = bt * Math.max(w, h) * 1.5; // reaches corners fully
         const washOpacity = Math.max(0, 1 - Math.pow(bt, 1.5)) * 0.5;
 
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
         ctx.globalAlpha = washOpacity;
         const wash = ctx.createRadialGradient(starX, starY, washRadius * 0.3, starX, starY, washRadius);
         wash.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
@@ -289,10 +272,9 @@ export default function DissolutionEffect({ onComplete }) {
         ctx.beginPath();
         ctx.arc(starX, starY, washRadius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.restore();
       }
 
-
+      ctx.globalAlpha = 1.0;
 
       if (elapsed < TOTAL) {
         animRef.current = requestAnimationFrame(animate);
