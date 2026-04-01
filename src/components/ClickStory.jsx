@@ -128,12 +128,103 @@ function CharacterReveal({ text, isFinal = false, onComplete }) {
   );
 }
 
+function FinalLovePrompt() {
+  const [isHovered, setIsHovered] = useState(false);
+  const [particles, setParticles] = useState([]);
+  const [hasEntered, setHasEntered] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setHasEntered(true), 2000);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Stardust spawner loop when hovered
+  useEffect(() => {
+    if (!isHovered) return;
+    const interval = setInterval(() => {
+      setParticles(prev => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(),
+          x: (Math.random() - 0.5) * 140, // Spread across text width
+          y: (Math.random() - 0.5) * 10,
+          size: Math.random() * 2 + 0.5,
+          duration: Math.random() * 1.5 + 1.5 // Float duration
+        }
+      ].slice(-15)); // Keep max 15 particles alive
+    }, 120); // Spawn rate
+    return () => clearInterval(interval);
+  }, [isHovered]);
+
+  return (
+    <motion.div
+      className="click-prompt"
+      style={{ 
+        color: '#ffe4b5', 
+        letterSpacing: '0.3em', 
+        cursor: 'default',
+        animation: 'none',
+        /* Keep absolute positioning from CSS, just ensure it stays on top */
+        zIndex: 50
+      }}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ 
+        opacity: isHovered ? 1 : 0.8, 
+        scale: isHovered ? 1.15 : 1,
+        textShadow: isHovered ? "0 0 20px rgba(255, 228, 181, 0.8)" : "0 0 0px rgba(255, 228, 181, 0)"
+      }}
+      // Use quick transition when hovered/unhovered, but slow 2s transition for the initial appearance
+      transition={{ duration: hasEntered ? 0.4 : 2, ease: "easeOut" }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Stardust Emitting Layer */}
+      <div className="absolute-full pointer-events-none flex-center" style={{ overflow: 'visible' }}>
+        <AnimatePresence>
+          {particles.map(p => (
+            <motion.div
+              key={p.id}
+              initial={{ opacity: 0, x: p.x, y: p.y, scale: 0 }}
+              animate={{ 
+                opacity: [0, 1, 0], 
+                y: p.y - 30 - Math.random() * 20, 
+                x: p.x + (Math.random() - 0.5) * 20,
+                scale: p.size 
+              }}
+              transition={{ duration: p.duration, ease: "easeOut" }}
+              style={{
+                position: 'absolute',
+                width: 2,
+                height: 2,
+                borderRadius: '50%',
+                backgroundColor: '#fffaf0',
+                boxShadow: '0 0 6px #ffe4b5, 0 0 2px #fff'
+              }}
+            />
+          ))}
+        </AnimatePresence>
+      </div>
+
+      <span style={{ textTransform: 'none' }}>I love you fo...hihi</span>
+    </motion.div>
+  );
+}
+
 export default function ClickStory({ onReset }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [canClick, setCanClick] = useState(false);
   const [ripples, setRipples] = useState([]);
+  const [showLovePrompt, setShowLovePrompt] = useState(false);
 
   const isFinal = currentIndex === phrases.length - 1;
+
+  // Delayed trigger for final prompt
+  useEffect(() => {
+    if (isFinal) {
+      const t = setTimeout(() => setShowLovePrompt(true), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [isFinal]);
 
   const handleRevealComplete = () => {
     setCanClick(true);
@@ -232,28 +323,7 @@ export default function ClickStory({ onReset }) {
       
       {/* Golden finale prompt */}
       <AnimatePresence>
-        {isFinal && (
-           <motion.div
-           className="click-prompt"
-           style={{ 
-             color: '#ffe4b5', 
-             letterSpacing: '0.3em', 
-             cursor: 'default',
-             animation: 'none' /* Disable CSS pulse so Framer Motion can scale it */
-           }}
-           initial={{ opacity: 0, scale: 1, textShadow: "0 0 0px rgba(255, 228, 181, 0)" }}
-           animate={{ opacity: 0.8, scale: 1 }}
-           transition={{ delay: 4, duration: 2 }}
-           whileHover={{ 
-             scale: 1.15, 
-             opacity: 1,
-             textShadow: "0 0 20px rgba(255, 228, 181, 0.8)",
-             transition: { duration: 0.3, ease: "easeOut" }
-           }}
-         >
-           I love you
-         </motion.div>
-        )}
+        {showLovePrompt && <FinalLovePrompt />}
       </AnimatePresence>
 
       {/* Replay Button (Appears late on final screen to prevent feeling trapped) */}
