@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { RotateCcw } from 'lucide-react';
 
@@ -68,12 +68,17 @@ function CharacterReveal({ text, isFinal = false, onComplete }) {
     return { words: mappedWords, totalTime: time };
   }, [text]);
 
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (onComplete) onComplete();
+      if (onCompleteRef.current) onCompleteRef.current();
     }, totalTime);
     return () => clearTimeout(timer);
-  }, [totalTime, onComplete]);
+  }, [totalTime]);
 
   return (
     <div className={`text-story text-center ${isFinal ? 'text-story-final-container' : ''}`}>
