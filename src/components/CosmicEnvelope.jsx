@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
+import { prepare, layout } from '@chenglou/pretext';
 
 /**
  * CosmicEnvelope — A luminous, ethereal envelope that glows from within.
@@ -8,6 +9,25 @@ import { motion } from 'framer-motion';
  * Features orbiting particles, visible internal light, and dramatic wax seal.
  */
 export default function CosmicEnvelope({ onOpen }) {
+  const envelopeRef = useRef(null);
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1000);
+  
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const layoutOutput = useMemo(() => {
+    if (typeof window === 'undefined') return { height: 0, lineCount: 0 };
+    try {
+      const prepared = prepare("For Eya", 'normal 40px "Great Vibes", cursive');
+      return layout(prepared, windowWidth * 0.8, 50);
+    } catch {
+      return { height: 0, lineCount: 0 };
+    }
+  }, [windowWidth]);
+
   // Orbiting stardust particles around the envelope
   const [orbitingDust] = useState(() => {
     return Array.from({ length: 16 }, (_, i) => ({
@@ -27,8 +47,8 @@ export default function CosmicEnvelope({ onOpen }) {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 2, delay: 0.3 }}
-      onClick={onOpen}
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onOpen()}
+      onClick={() => onOpen(envelopeRef.current?.getBoundingClientRect())}
+      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && onOpen(envelopeRef.current?.getBoundingClientRect())}
       tabIndex={0}
       role="button"
       aria-label="Open cosmic envelope"
@@ -71,7 +91,7 @@ export default function CosmicEnvelope({ onOpen }) {
         ))}
       </div>
 
-      <div className="envelope-wrapper">
+      <div className="envelope-wrapper" ref={envelopeRef}>
         {/* Multiple layered glows behind envelope */}
         <div className="envelope-glow-layer glow-1" />
         <div className="envelope-glow-layer glow-2" />
@@ -112,7 +132,20 @@ export default function CosmicEnvelope({ onOpen }) {
 
         {/* Letter inside — glowing from within */}
         <div className="envelope-letter">
-          <span style={{ position: 'relative', zIndex: 1, fontFamily: 'var(--font-cursive)', fontSize: '2.5rem', fontWeight: 'normal', transform: 'translateY(15px)' }}>For Eya</span>
+          <span style={{ 
+            position: 'relative', 
+            zIndex: 1, 
+            fontFamily: 'var(--font-cursive)', 
+            fontSize: '2.5rem', 
+            fontWeight: 'normal', 
+            transform: 'translateY(15px)',
+            height: layoutOutput.height > 0 ? layoutOutput.height : 'auto',
+            display: 'inline-flex',
+            justifyContent: 'center',
+            alignItems: 'center'
+          }}>
+            For Eya
+          </span>
           <div className="letter-glow" />
         </div>
 

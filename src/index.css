@@ -120,12 +120,10 @@ body {
 /* Main wrapper */
 .envelope-wrapper {
   position: relative;
-  width: 360px;
-  height: 250px;
-  perspective: 1500px;
-  transition: transform 0.7s cubic-bezier(0.34, 1.56, 0.64, 1);
-  animation: envelopeHeartbeat 4s ease-in-out infinite alternate;
-  will-change: transform;
+  /* defaults for mobile, overridden by media queries above */
+  width: 90vw;
+  height: calc(90vw * 290 / 420);
+  perspective: 1000px;
 }
 
 @keyframes envelopeHeartbeat {
@@ -400,16 +398,28 @@ body {
 /* ---- Front flap (bottom) — Fully Opaque ---- */
 .envelope-front {
   position: absolute;
-  width: 0;
-  height: 0;
-  border-left: 180px solid #0c1830;
-  border-right: 180px solid #0c1830;
-  border-bottom: 125px solid #101e3e;
-  border-top: 125px solid transparent;
-  bottom: 0;
-  border-radius: 0 0 12px 12px;
-  filter: drop-shadow(0 -3px 10px rgba(0, 0, 0, 0.4));
+  bottom: 0; left: 0;
+  width: 0; height: 0;
+  border-style: solid;
+  border-color: transparent;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  border-left-color: rgba(255, 255, 255, 0.05);
+  border-right-color: rgba(255, 255, 255, 0.05);
+  /* borders handled via media query */
+  z-index: 3;
+}
+
+.envelope-flap {
+  position: absolute;
+  top: 0; left: 0;
+  width: 0; height: 0;
+  border-style: solid;
+  border-color: transparent;
+  border-top-color: rgba(255, 255, 255, 0.15);
+  /* borders handled via media query */
+  transform-origin: top;
   z-index: 5;
+  filter: drop-shadow(0 10px 10px rgba(0, 0, 0, 0.3));
 }
 
 /* ---- Top flap — Fully Opaque ---- */
@@ -729,7 +739,7 @@ body {
 }
 
 .text-story {
-  font-size: 2.8rem;
+  font-size: clamp(1.5rem, 4vw, 3rem);
   line-height: 1.5;
   font-weight: 400;
   letter-spacing: 0.06em;
@@ -746,7 +756,7 @@ body {
 
 .final-cursive-text {
   font-family: var(--font-cursive);
-  font-size: 4.5rem;
+  font-size: clamp(2.5rem, 6vw, 4.5rem);
   color: #ffe4b5; /* Warm Champagne */
   line-height: 1.4;
   letter-spacing: 0.02em;
@@ -785,8 +795,7 @@ body {
 
 /* Responsive */
 @media (min-width: 768px) {
-  .text-story { font-size: 3rem; }
-  .text-story-final { font-size: 4rem; }
+  /* removed fixed text sizing, handled by clamp */
   .envelope-wrapper { width: 420px; height: 290px; }
   .envelope-front {
     border-left-width: 210px;
@@ -799,6 +808,36 @@ body {
     border-right-width: 210px;
     border-top-width: 156px;
     border-bottom-width: 134px;
+  }
+}
+
+@media (max-width: 767px) {
+  .envelope-wrapper {
+    width: 90vw;
+    height: calc(90vw * 290 / 420);
+  }
+  .envelope-front {
+    border-left-width: 45vw;
+    border-right-width: 45vw;
+    border-bottom-width: calc(45vw * 145 / 210);
+    border-top-width: calc(45vw * 145 / 210);
+  }
+  .envelope-flap {
+    border-left-width: 45vw;
+    border-right-width: 45vw;
+    border-top-width: calc(45vw * 156 / 210);
+    border-bottom-width: calc(45vw * 134 / 210);
+  }
+  .seal-star {
+    font-size: 1.8rem;
+  }
+  .wax-seal {
+    width: 60px;
+    height: 60px;
+  }
+  .seal-rays {
+    width: 120px;
+    height: 120px;
   }
 }
 

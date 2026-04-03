@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
+import { prepare, layout } from '@chenglou/pretext';
 // eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion';
 
@@ -13,6 +14,24 @@ const PARTICLES = Array.from({ length: 30 }).map((_, i) => ({
 }));
 
 export default function LoadingScreen() {
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1000);
+  
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const layoutOutput = useMemo(() => {
+    if (typeof window === 'undefined') return { height: 0, lineCount: 0 };
+    try {
+      const prepared = prepare("Gathering the stars...", 'italic 28.8px "Cormorant Garamond", serif');
+      return layout(prepared, windowWidth * 0.8, 40);
+    } catch {
+      return { height: 0, lineCount: 0 };
+    }
+  }, [windowWidth]);
+
   return (
     <motion.div
       key="loading"
@@ -104,6 +123,10 @@ export default function LoadingScreen() {
             textShadow: '0 0 25px rgba(252, 211, 77, 0.6), 0 0 45px rgba(252, 211, 77, 0.2)',
             margin: 0,
             textAlign: 'center',
+            height: layoutOutput.height > 0 ? layoutOutput.height : 'auto',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
             animation: 'shimmerText 3s ease-in-out infinite'
           }}
         >

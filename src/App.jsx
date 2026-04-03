@@ -21,6 +21,7 @@ import ClickStory from './components/ClickStory';
  */
 function App() {
   const [isLoading, setIsLoading] = useState(true);
+  const [envelopeRect, setEnvelopeRect] = useState(null);
   const [showEnvelope, setShowEnvelope] = useState(false);
   const [showDissolution, setShowDissolution] = useState(false);
   const [starMapActive, setStarMapActive] = useState(false);
@@ -115,7 +116,8 @@ function App() {
     }
   }, [mapRendered]);
 
-  const handleOpen = useCallback(() => {
+  const handleOpen = useCallback((rect) => {
+    setEnvelopeRect(rect);
     // 1. Envelope fades out smoothly, dissolution takes over
     setShowEnvelope(false);
     setShowDissolution(true);
@@ -174,7 +176,6 @@ function App() {
             exit={{
               opacity: 0,
               filter: "brightness(1.5)",
-              scale: 1.05,
               transition: { duration: 1.2, ease: "easeInOut" },
             }}
           >
@@ -191,7 +192,7 @@ function App() {
             className="fixed-full z-50 pointer-events-none"
             exit={{ opacity: 0, transition: { duration: 1.5, ease: "easeOut" } }}
           >
-            <DissolutionEffect onComplete={handleDissolutionComplete} />
+            <DissolutionEffect onComplete={handleDissolutionComplete} envelopeRect={envelopeRect} />
           </motion.div>
         )}
       </AnimatePresence>

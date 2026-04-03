@@ -8,7 +8,7 @@ import { useEffect, useRef } from 'react';
  * Phase 3 (2500ms–6000ms): All particles are pulled toward a convergence point, spiraling inward.
  * Phase 4 (6000ms–8000ms): The newly formed star explodes outward in a radiant burst.
  */
-export default function DissolutionEffect({ onComplete }) {
+export default function DissolutionEffect({ onComplete, envelopeRect }) {
   const canvasRef = useRef(null);
   const animRef = useRef(null);
 
@@ -46,8 +46,12 @@ export default function DissolutionEffect({ onComplete }) {
 
     function generateEnvelopeMotes() {
       const parts = [];
-      const envW = w >= 768 ? 420 : 360;
-      const envH = w >= 768 ? 290 : 250;
+      const envW = envelopeRect ? envelopeRect.width : (w >= 768 ? 420 : 360);
+      const envH = envelopeRect ? envelopeRect.height : (w >= 768 ? 290 : 250);
+      
+      // Center of the envelope on screen
+      const envCX = envelopeRect ? envelopeRect.left + envW / 2 : cx;
+      const envCY = envelopeRect ? envelopeRect.top + envH / 2 : cy;
 
       const cyan = { r: 56, g: 189, b: 248 };
       const indigo = { r: 129, g: 140, b: 248 };
@@ -66,10 +70,10 @@ export default function DissolutionEffect({ onComplete }) {
         }
       }
 
-      const tl_x = cx - envW / 2, tl_y = cy - envH / 2;
-      const tr_x = cx + envW / 2, tr_y = cy - envH / 2;
-      const bl_x = cx - envW / 2, bl_y = cy + envH / 2;
-      const br_x = cx + envW / 2, br_y = cy + envH / 2;
+      const tl_x = envCX - envW / 2, tl_y = envCY - envH / 2;
+      const tr_x = envCX + envW / 2, tr_y = envCY - envH / 2;
+      const bl_x = envCX - envW / 2, bl_y = envCY + envH / 2;
+      const br_x = envCX + envW / 2, br_y = envCY + envH / 2;
 
       // Outer border — Reduced density for a finer, lighter look
       addLine(tl_x, tl_y, tr_x, tr_y, cyan, 0.8);
@@ -78,24 +82,24 @@ export default function DissolutionEffect({ onComplete }) {
       addLine(bl_x, bl_y, tl_x, tl_y, indigo, 0.8);
 
       // Top Flap
-      addLine(tl_x, tl_y, cx, cy + 15, cyan, 0.6);
-      addLine(tr_x, tr_y, cx, cy + 15, cyan, 0.6);
+      addLine(tl_x, tl_y, envCX, envCY + 15, cyan, 0.6);
+      addLine(tr_x, tr_y, envCX, envCY + 15, cyan, 0.6);
 
       // Bottom Flap
-      addLine(bl_x, bl_y, cx, cy - 25, indigo, 0.6);
-      addLine(br_x, br_y, cx, cy - 25, indigo, 0.6);
+      addLine(bl_x, bl_y, envCX, envCY - 25, indigo, 0.6);
+      addLine(br_x, br_y, envCX, envCY - 25, indigo, 0.6);
 
       // Wax seal (dense circle at the center) — Halved for airiness
       for (let i = 0; i < 80; i++) {
         const angle = Math.random() * Math.PI * 2;
         const r = Math.random() * 20;
-        parts.push({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r, color: gold });
+        parts.push({ x: envCX + Math.cos(angle) * r, y: envCY + Math.sin(angle) * r, color: gold });
       }
 
       // Constellation text/dust mix — Reduced significantly to avoid clutter
       for (let i = 0; i < 150; i++) {
-        const rx = cx + (Math.random() - 0.5) * envW * 0.85;
-        const ry = cy + (Math.random() - 0.5) * envH * 0.85;
+        const rx = envCX + (Math.random() - 0.5) * envW * 0.85;
+        const ry = envCY + (Math.random() - 0.5) * envH * 0.85;
         parts.push({ x: rx, y: ry, color: envelopeColors[Math.floor(Math.random() * envelopeColors.length)] });
       }
 
@@ -286,7 +290,7 @@ export default function DissolutionEffect({ onComplete }) {
     animRef.current = requestAnimationFrame(animate);
 
     return () => cancelAnimationFrame(animRef.current);
-  }, [onComplete]);
+  }, [onComplete, envelopeRect]);
 
   return (
     <div className="dissolution-container">

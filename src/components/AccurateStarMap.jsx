@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, memo } from 'react';
+import { useEffect, useRef, memo } from 'react';
 
 /**
  * AccurateStarMap — Renders the D3 Celestial star map for
@@ -6,7 +6,6 @@ import { useEffect, useState, useRef, memo } from 'react';
  * vignette, aurora shimmer, deep parallax, and twinkling stars.
  */
 const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
-  const [isLoaded, setIsLoaded] = useState(false);
   const containerRef = useRef(null);
 
   useEffect(() => {
@@ -68,9 +67,8 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
         window.Celestial.display(config);
         window.Celestial.date(new Date("2005-04-01T00:00:00+08:00"));
         
-        // Give D3 a moment to render the SVG, then inject twinkle animations via requestIdleCallback
+          // Give D3 a moment to render the SVG, then inject twinkle animations via requestIdleCallback
         setTimeout(() => {
-          setIsLoaded(true);
           if (onLoaded) onLoaded();
           
           const injectTwinkles = () => {
@@ -150,13 +148,26 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
       h = window.innerHeight;
     };
     
+    let isTouchDevice = false;
+    
     const handleMouseMove = (e) => {
-      if (!isParallaxActive) return; // Keep map perfectly centered while fading in
+      if (isTouchDevice || !isParallaxActive) return; 
       targetX = (e.clientX / w - 0.5) * 2; // -1 to 1
       targetY = (e.clientY / h - 0.5) * 2; // -1 to 1
     };
 
+    const handleTouchStart = () => {
+      isTouchDevice = true;
+    };
+
     const renderLoop = () => {
+      if (isTouchDevice && isParallaxActive) {
+        // Slow auto-pan fallback for mobile
+        const time = Date.now() * 0.0005;
+        targetX = Math.sin(time) * 0.5;
+        targetY = Math.cos(time * 0.8) * 0.5;
+      }
+      
       // Calculate fluid JS smoothing (lerp) toward mouse target
       const diffX = targetX - currentX;
       const diffY = targetY - currentY;
@@ -173,6 +184,7 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
 
     window.addEventListener('resize', handleResize);
     window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchstart', handleTouchStart, { passive: true });
     
     // Start continuous animation loop
     rafId = requestAnimationFrame(renderLoop);
@@ -181,6 +193,7 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
       clearTimeout(parallaxTimeout);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchstart', handleTouchStart);
       if (rafId) cancelAnimationFrame(rafId);
     };
   }, [isActive]);
