@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, lazy, Suspense } from 'react';
 // eslint-disable-next-line no-unused-vars
 import { AnimatePresence, motion } from 'framer-motion';
 import CosmicCanvas from './components/CosmicCanvas';
@@ -6,8 +6,9 @@ import CosmicEnvelope from './components/CosmicEnvelope';
 import AccurateStarMap from './components/AccurateStarMap';
 import LoadingScreen from './components/LoadingScreen';
 import StardustCursor from './components/StardustCursor';
-import DissolutionEffect from './components/DissolutionEffect';
-import ClickStory from './components/ClickStory';
+
+const DissolutionEffect = lazy(() => import('./components/DissolutionEffect'));
+const ClickStory = lazy(() => import('./components/ClickStory'));
 
 /**
  * App — Orchestrates the cinematic flow with overlapping transitions:
@@ -192,7 +193,9 @@ function App() {
             className="fixed-full z-50 pointer-events-none"
             exit={{ opacity: 0, transition: { duration: 1.5, ease: "easeOut" } }}
           >
-            <DissolutionEffect onComplete={handleDissolutionComplete} envelopeRect={envelopeRect} />
+            <Suspense fallback={null}>
+              <DissolutionEffect onComplete={handleDissolutionComplete} envelopeRect={envelopeRect} />
+            </Suspense>
           </motion.div>
         )}
       </AnimatePresence>
@@ -207,7 +210,9 @@ function App() {
             transition={{ duration: 2.5, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
             className="absolute-full z-10"
           >
-            <ClickStory onReset={handleReset} />
+            <Suspense fallback={null}>
+              <ClickStory onReset={handleReset} />
+            </Suspense>
           </motion.div>
         )}
       </AnimatePresence>

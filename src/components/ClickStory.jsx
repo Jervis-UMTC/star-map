@@ -57,17 +57,15 @@ function CharacterReveal({ text, isFinal = false, onComplete, isExploding = fals
         const isItalic = isItalicWord(word) && !isFinal;
         const chars = word.split('').map((char) => {
            const gCharIdx = charIndex++;
-           const angle = Math.sin(gCharIdx * 12.34) * Math.PI * 2;
-           const distance = 20 + Math.abs(Math.cos(gCharIdx * 43.21)) * 60;
            
            return {
               char,
               delay: gCharIdx * 0.035,
-              targetX: Math.cos(angle) * distance,
-              targetY: -40 - (Math.abs(Math.sin(angle)) * distance) + (Math.cos(gCharIdx) * 20),
-              rotation: Math.sin(gCharIdx * 10) * 120,
-              scale: 1.2 + Math.abs(Math.cos(gCharIdx * 5)) * 0.8,
-              explodeDelay: Math.abs(Math.sin(gCharIdx * 2.1)) * 2.0
+              targetX: 0, // Stationary
+              targetY: 0, // Stationary
+              rotation: 0, // No tilt
+              scale: 1, // No shrink
+              explodeDelay: gCharIdx * 0.015 // Sequential wave from left to right
            };
         });
         charIndex++; // space
@@ -157,9 +155,9 @@ function CharacterReveal({ text, isFinal = false, onComplete, isExploding = fals
                             y: c.targetY,
                             scale: c.scale,
                             rotate: c.rotation,
-                            textShadow: '0 0 15px rgba(255, 250, 240, 0.5)',
+                            textShadow: '0 0 0px rgba(255, 250, 240, 0)',
                             transition: { 
-                                duration: 3.5 + (c.explodeDelay * 0.5), 
+                                duration: 1.5, 
                                 ease: [0.25, 1, 0.5, 1], 
                                 delay: c.explodeDelay 
                             }
@@ -306,7 +304,7 @@ export default function ClickStory({ onReset }) {
       setTimeout(() => {
         setCurrentIndex((prev) => prev + 1);
         setIsExploding(false);
-      }, 2000); // Reduced for overlap
+      }, 1600); // Stationary fade overlap
     }
   };
 
