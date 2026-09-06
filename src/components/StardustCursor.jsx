@@ -8,6 +8,40 @@ const palette = [
   { r: 129, g: 140, b: 248 }, // Indigo / Light Purple
 ];
 
+// Pre-rendered offscreen GPU sprites for each cursor color
+const GLOW_SPRITES = typeof document !== 'undefined' ? palette.map(color => {
+  const c = document.createElement('canvas');
+  c.width = 48;
+  c.height = 48;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(24, 24, 0, 24, 24, 24);
+  g.addColorStop(0, `rgba(${color.r}, ${color.g}, ${color.b}, 0.7)`);
+  g.addColorStop(0.35, `rgba(${color.r}, ${color.g}, ${color.b}, 0.25)`);
+  g.addColorStop(1, 'transparent');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(24, 24, 24, 0, Math.PI * 2);
+  ctx.fill();
+  return c;
+}) : [];
+
+// Pre-rendered offscreen pointer halo sprite
+const HALO_SPRITE = typeof document !== 'undefined' ? (() => {
+  const c = document.createElement('canvas');
+  c.width = 96;
+  c.height = 96;
+  const ctx = c.getContext('2d');
+  const g = ctx.createRadialGradient(48, 48, 0, 48, 48, 48);
+  g.addColorStop(0, 'rgba(255, 245, 230, 0.22)');
+  g.addColorStop(0.45, 'rgba(255, 255, 255, 0.08)');
+  g.addColorStop(1, 'transparent');
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.arc(48, 48, 48, 0, Math.PI * 2);
+  ctx.fill();
+  return c;
+})() : null;
+
 const StardustCursor = memo(function StardustCursor({ isPaused }) {
   const canvasRef = useRef(null);
   const isPausedRef = useRef(isPaused);
@@ -43,12 +77,11 @@ const StardustCursor = memo(function StardustCursor({ isPaused }) {
     window.addEventListener('resize', resize);
 
     const handleMouseMove = (e) => {
-      if (isPausedRef.current) return; // Ignore movement when paused
+      if (isPausedRef.current) return;
 
       lastMouseRef.current = { ...mouseRef.current };
       mouseRef.current = { x: e.clientX, y: e.clientY };
 
-      // Spawn stardust particles
       const dx = mouseRef.current.x - lastMouseRef.current.x;
       const dy = mouseRef.current.y - lastMouseRef.current.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
@@ -58,21 +91,17 @@ const StardustCursor = memo(function StardustCursor({ isPaused }) {
       for (let i = 0; i < numParticles; i++) {
         const mx = lastMouseRef.current.x + (dx * i) / numParticles;
         const my = lastMouseRef.current.y + (dy * i) / numParticles;
-        
-        // Stardust that gently floats up
-        const color = palette[Math.floor(Math.random() * palette.length)];
+        const colorIdx = Math.floor(Math.random() * palette.length);
         
         particlesRef.current.push({
           x: mx + (Math.random() - 0.5) * 15,
           y: my + (Math.random() - 0.5) * 15,
-          vx: (Math.random() - 0.5) * 0.5, // gentle horizontal drift
-          vy: -(Math.random() * 1.5 + 0.5), // strictly floats UP
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: -(Math.random() * 1.5 + 0.5),
           life: 1,
           decay: Math.random() * 0.015 + 0.01,
           size: Math.random() * 1.5 + 0.5,
-          r: color.r,
-          g: color.g,
-          b: color.b,
+          colorIdx,
         });
       }
     };
@@ -80,7 +109,6 @@ const StardustCursor = memo(function StardustCursor({ isPaused }) {
     window.addEventListener('mousemove', handleMouseMove);
 
     const animate = () => {
-      // If paused AND all particles have died out, we can skip rendering completely to save CPU/GPU
       if (isPausedRef.current && particlesRef.current.length === 0) {
         ctx.clearRect(0, 0, dimsRef.current.w, dimsRef.current.h);
         animRef.current = requestAnimationFrame(animate);
@@ -89,10 +117,9 @@ const StardustCursor = memo(function StardustCursor({ isPaused }) {
 
       const { w, h } = dimsRef.current;
       ctx.clearRect(0, 0, w, h);
-
       ctx.globalCompositeOperation = 'screen';
 
-      // Render Stardust Motes
+      // Render Stardust Motes via GPU Sprite Blits
       for (let i = particlesRef.current.length - 1; i >= 0; i--) {
         const p = particlesRef.current[i];
         p.x += p.vx;
@@ -100,49 +127,41 @@ const StardustCursor = memo(function StardustCursor({ isPaused }) {
         p.life -= p.decay;
 
         if (p.life <= 0) {
-          particlesRef.current.splice(i, 1);
+          // O(1) swap-pop removal
+          particlesRef.current[i] = particlesRef.current[particlesRef.current.length - 1];
+          particlesRef.current.pop();
           continue;
         }
 
-        const opacity = p.life;
-        const colorStr = `rgba(${p.r}, ${p.g}, ${p.b}, ${opacity})`;
+        ctx.globalAlpha = p.life;
         
-        // Solid core of the particle
-        ctx.fillStyle = colorStr;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Soft dreamy glow around the particle
+        // Draw cached glow sprite (instant GPU blit, zero radial gradient calculation!)
         const glowSize = p.size * 4;
-        const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowSize);
-        gradient.addColorStop(0, `rgba(${p.r}, ${p.g}, ${p.b}, ${opacity * 0.5})`);
-        gradient.addColorStop(1, 'transparent');
-        
-        ctx.fillStyle = gradient;
+        const sprite = GLOW_SPRITES[p.colorIdx];
+        if (sprite) {
+          ctx.drawImage(sprite, p.x - glowSize, p.y - glowSize, glowSize * 2, glowSize * 2);
+        }
+
+        // Solid core speck
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(p.x, p.y, glowSize, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, p.size * 0.7, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Render very subtle, responsive core glow (Halo)
-      if (!isPausedRef.current && mouseRef.current.x !== -1000) {
+      // Render Pointer Halo via cached sprite
+      if (!isPausedRef.current && mouseRef.current.x !== -1000 && HALO_SPRITE) {
         const time = Date.now();
         const breathe = Math.sin(time * 0.002) * 0.1 + 0.9;
         const coreRadius = 35 * breathe;
-        
-        const pointerGlow = ctx.createRadialGradient(
-          mouseRef.current.x, mouseRef.current.y, 0, 
-          mouseRef.current.x, mouseRef.current.y, coreRadius
+        ctx.globalAlpha = breathe * 0.8;
+        ctx.drawImage(
+          HALO_SPRITE,
+          mouseRef.current.x - coreRadius,
+          mouseRef.current.y - coreRadius,
+          coreRadius * 2,
+          coreRadius * 2
         );
-        pointerGlow.addColorStop(0, 'rgba(255, 245, 230, 0.15)');
-        pointerGlow.addColorStop(0.4, 'rgba(255, 255, 255, 0.05)');
-        pointerGlow.addColorStop(1, 'transparent');
-        
-        ctx.fillStyle = pointerGlow;
-        ctx.beginPath();
-        ctx.arc(mouseRef.current.x, mouseRef.current.y, coreRadius, 0, Math.PI * 2);
-        ctx.fill();
       }
 
       ctx.globalAlpha = 1;
