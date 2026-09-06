@@ -1,20 +1,25 @@
 import { useEffect, useRef, memo } from 'react';
 
 /**
- * AccurateStarMap — Renders the D3 Celestial star map for
- * April 1, 2005, Philippines sky. Now with living effects:
- * vignette, aurora shimmer, deep parallax, and twinkling stars.
+ * AccurateStarMap — Renders the authentic D3 Celestial star map for April 1, 2005 (Philippines sky).
+ * Pure cinematic, living celestial experience:
+ * - Dynamic diurnal celestial drift (continuous slow, majestic planetary turning)
+ * - Shimmering starlight pulses running along constellation lines
+ * - Multi-tier twinkling & radiant scintillation on real stars
+ * - Fluid 3D mouse & touch parallax
+ * - Pristine sky with zero clutter or acronyms
  */
 const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
   const containerRef = useRef(null);
+  const driftRef = useRef(0);
 
+  // Initialize D3 Celestial
   useEffect(() => {
     if (!window.Celestial) {
       console.error("D3 Celestial library not loaded");
       return;
     }
 
-    // Delay D3 initialization so Framer Motion / UI doesn't stutter on initial load
     const initTimer = setTimeout(() => {
       try {
         const config = {
@@ -28,27 +33,36 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
             show: true,
             limit: 5.5,
             colors: true,
-            style: { fill: "#ffffff", opacity: 0.85 },
+            style: { fill: "#ffffff", opacity: 0.9 },
             designation: false,
-            size: 5,
+            proper: false,
+            properStyle: { fill: "rgba(0,0,0,0)", opacity: 0, font: ["0px sans-serif"] },
+            size: 5.5,
           },
 
-          dsos: { show: false },
+          dsos: { show: false, names: false },
 
           constellations: {
             show: true,
-            names: false,
+            names: false, // Pristine, romantic sky without abbreviations
+            namesType: "iau",
+            nameStyle: {
+              fill: "rgba(0,0,0,0)",
+              opacity: 0,
+              font: ["0px sans-serif", "0px sans-serif", "0px sans-serif"],
+            },
             lines: true,
             lineStyle: {
               stroke: "#38bdf8",
-              width: 0.8,
-              opacity: 0.45,
+              width: 1.0,
+              opacity: 0.6,
             },
+            bounds: false,
           },
 
           mw: {
             show: true,
-            style: { fill: "#0f172a", opacity: 0.25 },
+            style: { fill: "#0f172a", opacity: 0.3 },
           },
 
           lines: {
@@ -67,59 +81,54 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
         window.Celestial.display(config);
         window.Celestial.date(new Date("2005-04-01T00:00:00+08:00"));
         
-          // Give D3 a moment to render the SVG, then inject twinkle animations via requestIdleCallback
         setTimeout(() => {
           if (onLoaded) onLoaded();
           
-          const injectTwinkles = () => {
+          const injectLivingStarEffects = () => {
+            // Remove any SVG text nodes (constellation abbreviations, star names)
+            document.querySelectorAll('#celestial-map text, #celestial-map tspan').forEach(t => t.remove());
+
             const starPaths = Array.from(document.querySelectorAll('#celestial-map svg path:not([stroke])'));
-            const linePaths = Array.from(document.querySelectorAll('#celestial-map svg path[stroke="#38bdf8"]'));
-            const mwPaths = Array.from(document.querySelectorAll('#celestial-map svg path[fill="#0f172a"]'));
+            const linePaths = Array.from(document.querySelectorAll('#celestial-map svg path[stroke], #celestial-map svg path[class*="const"]'));
+            const mwPaths = Array.from(document.querySelectorAll('#celestial-map svg path[fill="#0f172a"], #celestial-map svg path[class*="mw"]'));
             
-            let i = 0;
-            const CHUNK_SIZE = 50;
-
-            const processChunk = () => {
-              const end = Math.min(i + CHUNK_SIZE, starPaths.length);
-              
-              for (; i < end; i++) {
-                const path = starPaths[i];
-                if (Math.random() < 0.15) {
-                  const duration = Math.random() * 6 + 6; 
-                  const delay = Math.random() * -10;
-                  path.style.animation = `starTwinkle ${duration}s ease-in-out infinite alternate ${delay}s`;
-                }
+            // Multi-frequency twinkling on prominent stars using hardware-accelerated CSS classes
+            const prominentStars = starPaths.slice(0, 180);
+            prominentStars.forEach((path, idx) => {
+              if (idx % 3 === 0) {
+                path.classList.add('star-scintillate-active');
+              } else if (idx % 2 === 0) {
+                path.classList.add('star-twinkle-active');
               }
+            });
 
-              if (i < starPaths.length) {
-                requestAnimationFrame(processChunk);
-              } else {
-                // Done with stars, apply classes to lines and milky way
-                // These are much smaller sets so we can do them at once
-                linePaths.forEach((path) => path.classList.add('constellation-line'));
-                mwPaths.forEach((path) => path.classList.add('milky-way-path'));
-              }
-            };
+            // Continuous breathing starlight pulses along constellation lines
+            linePaths.forEach((path, idx) => {
+              path.classList.add('constellation-line');
+              path.classList.add('pulse-active');
+              path.style.animationDelay = `${(idx % 10) * 0.4}s`;
+            });
 
-            requestAnimationFrame(processChunk);
+            // Milky Way subtle atmospheric glow
+            mwPaths.forEach((path) => path.classList.add('milky-way-path'));
           };
 
           if ('requestIdleCallback' in window) {
-            window.requestIdleCallback(injectTwinkles);
+            window.requestIdleCallback(injectLivingStarEffects);
           } else {
-            setTimeout(injectTwinkles, 100);
+            setTimeout(injectLivingStarEffects, 100);
           }
         }, 500);
 
       } catch (err) {
         console.error("Celestial init error:", err);
       }
-    }, 150); // Yield to main thread first
+    }, 150);
 
     return () => clearTimeout(initTimer);
   }, [onLoaded]);
 
-  // Deep Parallax Effect based on Mouse Movement
+  // Living Diurnal Celestial Drift + Smooth 3D Parallax
   useEffect(() => {
     if (!isActive) return;
     
@@ -127,21 +136,11 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
     let w = window.innerWidth;
     let h = window.innerHeight;
     
-    // Store exact mouse target vs current smooth position
     let targetX = 0;
     let targetY = 0;
     let currentX = 0;
     let currentY = 0;
-
-    let isParallaxActive = false;
-    let parallaxTimeout;
-
-    if (isActive) {
-      // Unlock the 3D parallax ONLY after the fade-in completely finishes (5 seconds)
-      parallaxTimeout = setTimeout(() => {
-        isParallaxActive = true;
-      }, 5000);
-    }
+    let lastTimestamp = performance.now();
 
     const handleResize = () => {
       w = window.innerWidth;
@@ -151,32 +150,45 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
     let isTouchDevice = false;
     
     const handleMouseMove = (e) => {
-      if (isTouchDevice || !isParallaxActive) return; 
-      targetX = (e.clientX / w - 0.5) * 2; // -1 to 1
-      targetY = (e.clientY / h - 0.5) * 2; // -1 to 1
+      if (isTouchDevice) return; 
+      targetX = (e.clientX / w - 0.5) * 2;
+      targetY = (e.clientY / h - 0.5) * 2;
     };
 
     const handleTouchStart = () => {
       isTouchDevice = true;
     };
 
-    const renderLoop = () => {
-      if (isTouchDevice && isParallaxActive) {
-        // Slow auto-pan fallback for mobile
-        const time = Date.now() * 0.0005;
-        targetX = Math.sin(time) * 0.5;
-        targetY = Math.cos(time * 0.8) * 0.5;
+    const renderLoop = (timestamp) => {
+      const delta = Math.min((timestamp - lastTimestamp) / 1000, 0.1);
+      lastTimestamp = timestamp;
+
+      // Diurnal celestial rotation — Earth turning beneath the April 1, 2005 sky
+      driftRef.current += delta * 1.5;
+
+      if (isTouchDevice) {
+        const time = timestamp * 0.0005;
+        targetX = Math.sin(time) * 0.4;
+        targetY = Math.cos(time * 0.7) * 0.3;
       }
       
-      // Calculate fluid JS smoothing (lerp) toward mouse target
       const diffX = targetX - currentX;
       const diffY = targetY - currentY;
       
-      if (Math.abs(diffX) > 0.001) currentX += diffX * 0.05;
-      if (Math.abs(diffY) > 0.001) currentY += diffY * 0.05;
+      if (Math.abs(diffX) > 0.0005) currentX += diffX * 0.06;
+      if (Math.abs(diffY) > 0.0005) currentY += diffY * 0.06;
       
+      // Majestic continuous slow panning and swaying
+      const panX = Math.sin(driftRef.current * 0.07) * 35;
+      const panY = Math.cos(driftRef.current * 0.04) * 14;
+
       if (containerRef.current) {
-        containerRef.current.style.transform = `rotateX(${-currentY * 6}deg) rotateY(${currentX * 6}deg) scale(1.08)`;
+        containerRef.current.style.transform = `
+          translate3d(${panX.toFixed(2)}px, ${panY.toFixed(2)}px, 0)
+          rotateX(${(-currentY * 5).toFixed(2)}deg)
+          rotateY(${(currentX * 5).toFixed(2)}deg)
+          scale(1.09)
+        `;
       }
       
       rafId = requestAnimationFrame(renderLoop);
@@ -186,11 +198,9 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('touchstart', handleTouchStart, { passive: true });
     
-    // Start continuous animation loop
     rafId = requestAnimationFrame(renderLoop);
 
     return () => {
-      clearTimeout(parallaxTimeout);
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('touchstart', handleTouchStart);
@@ -202,18 +212,19 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
     <div
       style={{
         opacity: isActive ? 1 : 0,
-        transition: 'opacity 5s ease-in-out',
-        willChange: 'opacity'
+        transform: isActive ? 'scale(1)' : 'scale(1.1)',
+        transition: 'opacity 4.5s cubic-bezier(0.16, 1, 0.3, 1), transform 5.5s cubic-bezier(0.16, 1, 0.3, 1)',
+        willChange: 'opacity, transform',
       }}
       className="starmap-container pointer-events-none"
     >
-      {/* Container for parallax tilt with slow, fluid momentum */}
+      {/* 3D Parallax & Diurnal Celestial Drift */}
       <div 
         ref={containerRef} 
         className="absolute-full" 
         style={{ 
-          transformOrigin: 'center center'
-          // removed will-change: transform to prevent blurry SVG rasterization ghosting
+          transformOrigin: 'center center',
+          transition: 'filter 0.5s ease',
         }}
       >
         {/* The D3 Celestial map */}
@@ -223,11 +234,14 @@ const AccurateStarMap = memo(function AccurateStarMap({ isActive, onLoaded }) {
         />
       </div>
 
-      {/* Vignette darkening at edges */}
+      {/* Cinematic Vignette */}
       <div className="starmap-vignette" />
 
-      {/* Aurora shimmer at bottom */}
+      {/* Radiant Horizon Aurora */}
       <div className="starmap-aurora" />
+
+      {/* Soft Celestial Glow */}
+      <div className="celestial-grid-glow" />
     </div>
   );
 });
