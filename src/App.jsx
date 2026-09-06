@@ -11,14 +11,14 @@ const DissolutionEffect = lazy(() => import('./components/DissolutionEffect'));
 const ClickStory = lazy(() => import('./components/ClickStory'));
 
 /**
- * App — Orchestrates the cinematic flow with overlapping transitions:
+ * App — Orchestrates the cinematic romantic experience for Eya:
  *
  * Pre-load  Waits for fonts, D3 Celestial, and audio to be ready.
  * t=0s      Click envelope
  * t=0s      Envelope fades out (0.3s), dissolution starts, star map begins slow reveal
  * t=3.5s    Motes mostly gone, star map ~55% visible
- * t=5s      Show scroll story
- * t=5.8s    Star map fully opaque
+ * t=5s      Show one-click story over living star map
+ * t=5.8s    Star map fully opaque & dynamically drifting
  */
 function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -41,17 +41,15 @@ function App() {
 
     const loadAssets = async () => {
       try {
-        // 1. Wait for fonts (Cormorant Garamond, Great Vibes)
         await document.fonts.ready;
 
-        // 2. Wait for audio to be capable of playing
         const audioPromise = new Promise((resolve) => {
           if (!audioRef.current) {
             resolve();
             return;
           }
           const audio = audioRef.current;
-          if (audio.readyState >= 3) { // HAVE_FUTURE_DATA
+          if (audio.readyState >= 3) {
             resolve();
           } else {
             const handleCanPlay = () => {
@@ -59,8 +57,7 @@ function App() {
               audio.removeEventListener('canplaythrough', handleCanPlay);
             };
             audio.addEventListener('canplaythrough', handleCanPlay);
-            audio.addEventListener('error', resolve); // Don't block on error
-            // Fallback timeout in case audio loading stalls
+            audio.addEventListener('error', resolve);
             setTimeout(() => {
               audio.removeEventListener('canplaythrough', handleCanPlay);
               resolve();
@@ -68,7 +65,6 @@ function App() {
           }
         });
 
-        // 3. Wait for window.Celestial
         const celestialPromise = new Promise((resolve) => {
           if (window.Celestial) {
             resolve();
@@ -76,7 +72,7 @@ function App() {
             let attempts = 0;
             const interval = setInterval(() => {
               attempts++;
-              if (window.Celestial || attempts > 20) { // 20 * 250ms = 5s max wait
+              if (window.Celestial || attempts > 20) {
                 clearInterval(interval);
                 resolve();
               }
@@ -91,7 +87,6 @@ function App() {
         }
       } catch (err) {
         console.error("Asset loading error:", err);
-        // Fallback to show envelope anyway
         if (isMounted) {
           setIsLoading(false);
           setShowEnvelope(true);
@@ -106,10 +101,8 @@ function App() {
     };
   }, []);
 
-  // When the map finishes rendering behind the scenes, we can safely reveal the envelope
   useEffect(() => {
     if (mapRendered) {
-      // Add an extra little beat for elegance
       setTimeout(() => {
         setIsLoading(false);
         setShowEnvelope(true);
@@ -119,17 +112,15 @@ function App() {
 
   const handleOpen = useCallback((rect) => {
     setEnvelopeRect(rect);
-    // 1. Envelope fades out smoothly, dissolution takes over
     setShowEnvelope(false);
     setShowDissolution(true);
 
-    // 2. Star map reveals earlier (as the vortex finishes and burst begins)
-    setTimeout(() => setStarMapActive(true), 5000);
+    // Star map begins its gradual reveal right as the vortex bursts into the stardust scatter
+    setTimeout(() => setStarMapActive(true), 4800);
 
-    // 3. Show scroll story after dust settles and map is 100% opaque
-    setTimeout(() => setShowStory(true), 10000);
+    // Show story once the scattered sparkling dust settles into the living night sky
+    setTimeout(() => setShowStory(true), 9000);
 
-    // Start audio
     if (audioRef.current) {
       audioRef.current.play().catch(() => {});
     }
@@ -147,7 +138,7 @@ function App() {
 
   return (
     <main className="app-container">
-      {/* Audio */}
+      {/* Background audio */}
       <audio ref={audioRef} loop src="/golden_hour.mp3" preload="auto" />
 
       <AnimatePresence>
@@ -157,14 +148,19 @@ function App() {
       {/* Global Interactive Cursor */}
       <StardustCursor isPaused={isLoading || showDissolution} />
 
-      {/* Always-on cosmic canvas background */}
-      <CosmicCanvas intensity={starMapActive ? 0.15 : 1} />
+      {/* Living cosmic canvas — rich with drifting multi-layer stars, nebulae & stardust */}
+      <CosmicCanvas 
+        intensity={starMapActive ? 0.75 : 1} 
+        speedMultiplier={1} 
+      />
 
-      {/* D3 Celestial star map — Mounts hidden during loading so it doesn't freeze thread on reveal */}
+      {/* D3 Celestial star map with living diurnal drift & glowing constellation pulses */}
       {celestialReady && (
         <AccurateStarMap 
           isActive={starMapActive} 
-          onLoaded={handleMapLoaded} 
+          onLoaded={handleMapLoaded}
+          driftSpeed={1}
+          pulsesActive={true}
         />
       )}
 
@@ -176,8 +172,7 @@ function App() {
             className="fixed-full z-50"
             exit={{
               opacity: 0,
-              filter: "brightness(1.5)",
-              transition: { duration: 1.2, ease: "easeInOut" },
+              transition: { duration: 0.25, ease: "easeOut" },
             }}
           >
             <CosmicEnvelope onOpen={handleOpen} />
@@ -185,7 +180,7 @@ function App() {
         )}
       </AnimatePresence>
 
-      {/* Dissolution motes — overlaps with star map reveal */}
+      {/* Dissolution motes */}
       <AnimatePresence>
         {showDissolution && (
           <motion.div
@@ -200,14 +195,15 @@ function App() {
         )}
       </AnimatePresence>
 
-      {/* Click Story — appears after star map is mostly visible */}
+      {/* One-click Story Narrative: pure, clean, tap anywhere to continue */}
       <AnimatePresence>
         {showStory && (
           <motion.div
             key="story"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 2.5, delay: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            exit={{ opacity: 0, transition: { duration: 0.8, ease: "easeOut" } }}
+            transition={{ duration: 2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
             className="absolute-full z-10"
           >
             <Suspense fallback={null}>
